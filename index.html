@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>像素冒險 - 實驗室逃脫</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="game-container">
+        <!-- 故事背景視窗 -->
+        <div class="story-modal" id="storyModal">
+            <div class="story-content">
+                <div class="story-page active" data-page="1">
+                    <h3 style="color: #00ff00; margin-bottom: 20px;">第一章：突破重圍</h3>
+                    <p>西元2147年，人類科技已經發展到巔峰。</p>
+                    <br>
+                    <p>你是一名實驗室的研究員，意外發現了一個驚人的秘密...</p>
+                    <br>
+                    <p>實驗室的防禦系統突然啟動，各種障礙物開始攻擊入侵者。</p>
+                    <br>
+                    <p>你必須想辦法逃出這個危險的地方！</p>
+                </div>
+                
+                <div class="story-page" data-page="2">
+                    <h3 style="color: #00ff00; margin-bottom: 20px;">第二章：逃脫計畫</h3>
+                    <p>沿途會有電信門市提供補給物品。</p>
+                    <br>
+                    <p>🩹 補血物品：可以恢復你的生命值</p>
+                    <p>🛡️ 防護罩：能抵擋三次攻擊</p>
+                    <br>
+                    <p>小心從天而降的障礙物，它們會造成傷害！</p>
+                    <br>
+                    <p>避開地面的陷阱，掉下去就完蛋了。</p>
+                </div>
+                
+                <div class="story-page" data-page="3">
+                    <h3 style="color: #00ff00; margin-bottom: 20px;">操作說明</h3>
+                    <p>🎮 左右方向鍵：移動角色</p>
+                    <br>
+                    <p>🚀 空白鍵：跳躍</p>
+                    <br>
+                    <p>🖱️ 雙擊物品：使用補給品</p>
+                    <br>
+                    <p>你的目標是抵達右側的實驗室完成逃脫！</p>
+                    <br>
+                    <p style="color: #ff6b6b;">準備好了嗎？讓我們開始冒險吧！</p>
+                </div>
+                
+                <div class="story-nav">
+                    <button class="story-button" id="nextBtn" onclick="nextPage()">下一頁 ▶</button>
+                    <button class="story-button hidden" id="startBtn" onclick="startGame()">開始遊戲</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 遊戲UI -->
+        <div class="game-ui">
+            <div class="health-bar">
+                <div class="health-fill" id="healthFill"></div>
+                <div class="health-text" id="healthText">HP: 100/100</div>
+            </div>
+            <div class="inventory">
+                <div class="inventory-item" id="healthPotions" ondblclick="useHealthPotion()">
+                    🩹
+                    <div class="inventory-count" id="healthCount">0</div>
+                </div>
+                <div class="inventory-item" id="shields" ondblclick="useShield()">
+                    🛡️
+                    <div class="inventory-count" id="shieldCount">0</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 遊戲畫布 -->
+        <canvas id="gameCanvas"></canvas>
+        
+        <!-- 結局視窗 -->
+        <div class="ending-modal" id="endingModal">
+            <div class="ending-content">
+                <div class="ending-title" id="endingTitle"></div>
+                <div class="ending-text" id="endingText"></div>
+                <button class="restart-button" onclick="restartGame()">重新開始</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html> 

@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>像素冒險 - 實驗室逃脫</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Press Start 2P', monospace;
+            background: #000000; /* 黑色背景 */
+            overflow: hidden;
+            color: white;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        
+        .game-container {
+            position: relative;
+            background: #000000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        #gameCanvas {
+            image-rendering: pixelated;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: crisp-edges;
+            display: block;
+            width: 100vw; /* 左右延伸到邊緣 */
+            height: calc(100vh * 513 / 749); /* 按比例動態高度 */
+        }
+        
+        /* 故事背景視窗 */
+        .story-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .story-content {
+            background: linear-gradient(45deg, #2d1b69, #11998e);
+            border: 4px solid #00ff00;
+            border-radius: 0;
+            padding: 30px;
+            max-width: 600px;
+            min-height: 400px;
+            position: relative;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
+        }
+        
+        .story-page {
+            display: none;
+            line-height: 1.8;
+            font-size: 12px;
+        }
+        
+        .story-page.active {
+            display: block;
+        }
+        
+        .story-nav {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+        }
+        
+        .story-button {
+            background: #00ff00;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            font-family: inherit;
+            font-size: 10px;
+            cursor: pointer;
+            border: 2px solid #000;
+            transition: all 0.1s;
+        }
+        
+        .story-button:hover {
+            background: #fff;
+            transform: scale(1.05);
+        }
+        
+        /* 遊戲UI */
+        .game-ui {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            z-index: 100;
+        }
+        
+        .health-bar {
+            background: #ff0000;
+            width: 200px;
+            height: 20px;
+            border: 2px solid #fff;
+            margin-bottom: 10px;
+            position: relative;
+        }
+        
+        .health-fill {
+            background: #00ff00;
+            height: 100%;
+            transition: width 0.3s;
+        }
+        
+        .health-text {
+            position: absolute;
+            top: 2px;
+            left: 5px;
+            font-size: 8px;
+            color: #fff;
+            text-shadow: 1px 1px 0 #000;
+        }
+        
+        .inventory {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .inventory-item {
+            width: 40px;
+            height: 40px;
+            border: 2px solid #fff;
+            background: #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .inventory-count {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #ff0000;
+            color: white;
+            font-size: 8px;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* 結局視窗 */
+        .ending-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .ending-content {
+            background: linear-gradient(45deg, #2d1b69, #11998e);
+            border: 4px solid #00ff00;
+            padding: 30px;
+            max-width: 500px;
+            text-align: center;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
+        }
+        
+        .ending-title {
+            font-size: 16px;
+            margin-bottom: 20px;
+            color: #00ff00;
+        }
+        
+        .ending-text {
+            font-size: 10px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+        
+        .restart-button {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-family: inherit;
+            font-size: 10px;
+            cursor: pointer;
+            border: 2px solid #000;
+        }
+        
+        .restart-button:hover {
+            background: #ff5252;
+            transform: scale(1.05);
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <!-- 故事背景視窗 -->
+        <div class="story-modal" id="storyModal">
+            <div class="story-content">
+                <div class="story-page active" data-page="1">
+                    <h3 style="color: #00ff00; margin-bottom: 20px;">第一章：突破重圍</h3>
+                    <p>西元2147年，人類科技已經發展到巔峰。</p>
+                    <br>
+                    <p>你是一名實驗室的研究員，意外發現了一個驚人的秘密...</p>
+                    <br>
+                    <p>實驗室的防禦系統突然啟動，各種障礙物開始攻擊入侵者。</p>
+                    <br>
+                    <p>你必須想辦法逃出這個危險的地方！</p>
+                </div>
+                
+                <div class="story-page" data-page="2">
+                    <h3 style="color: #00ff00; margin-bottom: 20px;">第二章：逃脫計畫</h3>
+                    <p>沿途會有電信門市提供補給物品。</p>
+                    <br>
+                    <p>🩹 補血物品：可以恢復你的生命值</p>
+                    <p>🛡️ 防護罩：能抵擋三次攻擊</p>
+                    <br>
+                    <p>小心從天而降的障礙物，它們會造成傷害！</p>
+                    <br>
+                    <p>避開地面的陷阱，掉下去就完蛋了。</p>
+                </div>
+                
+                <div class="story-page" data-page="3">
+                    <h3 style="color: #00ff00; margin-bottom: 20px;">操作說明</h3>
+                    <p>🎮 左右方向鍵：移動角色</p>
+                    <br>
+                    <p>🚀 空白鍵：跳躍</p>
+                    <br>
+                    <p>🖱️ 雙擊物品：使用補給品</p>
+                    <br>
+                    <p>你的目標是抵達右側的實驗室完成逃脫！</p>
+                    <br>
+                    <p style="color: #ff6b6b;">準備好了嗎？讓我們開始冒險吧！</p>
+                </div>
+                
+                <div class="story-nav">
+                    <button class="story-button" id="nextBtn" onclick="nextPage()">下一頁 ▶</button>
+                    <button class="story-button hidden" id="startBtn" onclick="startGame()">開始遊戲</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 遊戲UI -->
+        <div class="game-ui">
+            <div class="health-bar">
+                <div class="health-fill" id="healthFill"></div>
+                <div class="health-text" id="healthText">HP: 100/100</div>
+            </div>
+            <div class="inventory">
+                <div class="inventory-item" id="healthPotions" ondblclick="useHealthPotion()">
+                    🩹
+                    <div class="inventory-count" id="healthCount">0</div>
+                </div>
+                <div class="inventory-item" id="shields" ondblclick="useShield()">
+                    🛡️
+                    <div class="inventory-count" id="shieldCount">0</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 遊戲畫布 -->
+        <canvas id="gameCanvas"></canvas>
+        
+        <!-- 結局視窗 -->
+        <div class="ending-modal" id="endingModal">
+            <div class="ending-content">
+                <div class="ending-title" id="endingTitle"></div>
+                <div class="ending-text" id="endingText"></div>
+                <button class="restart-button" onclick="restartGame()">重新開始</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 遊戲變數
+        let canvas, ctx;
+        let gameState = 'story';
+        let currentStoryPage = 1;
+        let maxStoryPages = 3;
+        let gameLoopId = null;
+        
+        // 背景圖片變數
+        let backgroundImage = null;
+        let backgroundWidth = 0;
+        let backgroundHeight = 0;
+        let backgroundLoaded = false;
+        
+        // 角色動畫系統
+        let characterSprites = {
+            idle: [],
+            running: []
+        };
+        let currentAnimation = 'idle';
+        let animationFrame = 0;
+        let lastFrameTime = 0;
+        let idleFrameInterval = 300; // 站立動畫：0.3秒換一張
+        let runningFrameInterval = 100; // 跑步動畫：0.1秒換一張
+        let spritesLoaded = false;
+        
+        // 遊戲物件
+        let player = {
+            x: 100, y: 0, width: 80, height: 80, // y位置會在初始化時設定
+            velocityX: 0, velocityY: 0, onGround: false,
+            health: 100, maxHealth: 100,
+            shieldActive: false, shieldHits: 0,
+            facingRight: true
+        };
+        
+        let camera = { x: 0, y: 0 };
+        
+        let world = {
+            width: 4000, height: 0, gravity: 0.3, // 增加世界寬度以適應寬屏，高度初始化後設定
+            roads: [], endpoint: null
+        };
+        
+        let inventory = { healthPotions: 2, shields: 1 };
+        let keys = {};
+        
+        // 載入背景圖片
+        function loadBackgroundImage() {
+            backgroundImage = new Image();
+            backgroundImage.onload = function() {
+                backgroundWidth = this.width;
+                backgroundHeight = this.height;
+                backgroundLoaded = true;
+                console.log('背景圖片載入完成:', backgroundWidth + 'x' + backgroundHeight);
+            };
+            backgroundImage.onerror = function() {
+                console.log('背景圖片載入失敗，使用預設背景');
+                backgroundLoaded = false;
+            };
+            // 使用相對路徑 - 請將您的背景圖片命名為 background.jpg 並放在與此HTML文件相同的目錄中
+            backgroundImage.src = 'background.jpg';
+        }
+        
+        // 載入角色動畫 - 確保正確順序載入
+        function loadCharacterSprites() {
+            // 重置動畫數組，確保順序正確
+            characterSprites.idle = [];
+            characterSprites.running = [];
+            
+            // 站立動畫圖片路徑（SVG格式）
+            const idleFramePaths = [
+                'character-idle-1.svg',
+                'character-idle-2.svg'
+            ];
+            
+            // 跑步動畫圖片路徑（SVG格式） - 按照正確順序
+            const runningFramePaths = [
+                'character-run-1.svg',  // 索引0
+                'character-run-2.svg',  // 索引1
+                'character-run-3.svg',  // 索引2
+                'character-run-4.svg'   // 索引3
+            ];
+            
+            let loadedCount = 0;
+            const totalFrames = idleFramePaths.length + runningFramePaths.length;
+            
+            // 確保按順序載入站立動畫
+            function loadIdleAnimation(index) {
+                if (index >= idleFramePaths.length) {
+                    loadRunningAnimation(0); // 開始載入跑步動畫
+                    return;
+                }
+                
+                const img = new Image();
+                img.onload = function() {
+                    characterSprites.idle[index] = img;
+                    loadedCount++;
+                    console.log(`✅ 站立動畫 ${index + 1} 載入完成: ${idleFramePaths[index]} (${this.width}x${this.height})`);
+                    loadIdleAnimation(index + 1); // 載入下一個
+                };
+                img.onerror = function() {
+                    console.log(`❌ 站立動畫 ${index + 1} 載入失敗: ${idleFramePaths[index]}`);
+                    loadIdleAnimation(index + 1); // 繼續載入下一個
+                };
+                img.src = idleFramePaths[index];
+            }
+            
+            // 確保按順序載入跑步動畫
+            function loadRunningAnimation(index) {
+                if (index >= runningFramePaths.length) {
+                                         // 所有動畫載入完成
+                     spritesLoaded = true;
+                     console.log('🎉 所有角色動畫載入完成！');
+                     console.log('📊 載入結果:');
+                     console.log('  站立動畫:', characterSprites.idle.length, '幀');
+                     console.log('  跑步動畫:', characterSprites.running.length, '幀');
+                     console.log('⏱️ 動畫速度設定:');
+                     console.log(`  站立動畫：每${idleFrameInterval}ms切換一幀 (0.3秒)`);
+                     console.log(`  跑步動畫：每${runningFrameInterval}ms切換一幀 (0.1秒)`);
+                     console.log('🏃 跑步動畫順序確認:');
+                     characterSprites.running.forEach((sprite, i) => {
+                         console.log(`  索引${i}: ${runningFramePaths[i]} ✅`);
+                     });
+                     
+                     // 驗證動畫完整性
+                     console.log('🔍 動畫完整性檢查:');
+                     console.log('  預期跑步動畫順序: character-run-1 → character-run-2 → character-run-3 → character-run-4');
+                     console.log('  實際載入順序:', characterSprites.running.map((_, i) => `character-run-${i+1}`).join(' → '));
+                     
+                     if (characterSprites.running.length === 4) {
+                         console.log('✅ 跑步動畫載入完整，共4幀');
+                     } else {
+                         console.log(`❌ 跑步動畫載入不完整，預期4幀，實際${characterSprites.running.length}幀`);
+                     }
+                    return;
+                }
+                
+                const img = new Image();
+                img.onload = function() {
+                    characterSprites.running[index] = img;
+                    loadedCount++;
+                    console.log(`✅ 跑步動畫 ${index + 1} 載入完成: ${runningFramePaths[index]} (${this.width}x${this.height})`);
+                    loadRunningAnimation(index + 1); // 載入下一個
+                };
+                img.onerror = function() {
+                    console.log(`❌ 跑步動畫 ${index + 1} 載入失敗: ${runningFramePaths[index]}`);
+                    loadRunningAnimation(index + 1); // 繼續載入下一個
+                };
+                img.src = runningFramePaths[index];
+            }
+            
+            // 開始按順序載入
+            loadIdleAnimation(0);
+        }
+        
+        // 移除上傳功能 - 直接使用指定的圖片文件
+        
+        // 遊戲尺寸設定 - 按照 513:749 比例
+        const GAME_HEIGHT_RATIO = 513 / 749;  // 遊戲高度與螢幕高度的比例
+        let GAME_HEIGHT = Math.floor(window.innerHeight * GAME_HEIGHT_RATIO);  // 動態計算遊戲高度
+        let GAME_WIDTH = window.innerWidth;  // 遊戲畫面寬度適應視窗
+        
+        // 初始化
+        function init() {
+            canvas = document.getElementById('gameCanvas');
+            ctx = canvas.getContext('2d');
+            
+            // 設置遊戲尺寸
+            updateCanvasSize();
+            
+            // 設置世界高度等於遊戲高度
+            world.height = GAME_HEIGHT;
+            
+            // 設置玩家初始位置（約遊戲高度的一半）
+            player.y = Math.floor(GAME_HEIGHT * 0.5);
+            
+            // 設置渲染質量
+            ctx.imageSmoothingEnabled = false; // 像素風格保持銳利
+            canvas.oncontextmenu = function(e) { e.preventDefault(); e.stopPropagation(); }
+            
+            loadBackgroundImage();
+            loadCharacterSprites();
+            loadRoadImages();
+            createWorld();
+            setupEventListeners();
+            updateUI();
+        }
+        
+        // 更新Canvas尺寸
+        function updateCanvasSize() {
+            GAME_WIDTH = window.innerWidth;
+            GAME_HEIGHT = Math.floor(window.innerHeight * GAME_HEIGHT_RATIO);
+            
+            canvas.width = GAME_WIDTH;
+            canvas.height = GAME_HEIGHT;
+            canvas.style.width = GAME_WIDTH + 'px';
+            canvas.style.height = GAME_HEIGHT + 'px';
+            
+            // 重新設置渲染品質
+            ctx.imageSmoothingEnabled = false;
+            ctx.imageSmoothingQuality = 'high';
+        }
+        
+        function createWorld() {
+            // 動態計算road-1元件尺寸
+            // 基準：背景高度512對應road-1高度32，等比縮放
+            const baseBackgroundHeight = 512;
+            const baseRoadHeight = 32;
+            const scaleRatio = baseRoadHeight / baseBackgroundHeight; // 32/512 = 1/16
+            
+            let roadWidth, roadHeight;
+            
+            // 如果有載入原始尺寸，使用原始比例
+            if (roadOriginalSizes['road-1']) {
+                const originalSize = roadOriginalSizes['road-1'];
+                const originalRatio = originalSize.width / originalSize.height;
+                
+                // 根據當前遊戲高度計算road-1高度
+                roadHeight = Math.floor(GAME_HEIGHT * scaleRatio);
+                // 根據原始比例計算寬度
+                roadWidth = Math.floor(roadHeight * originalRatio);
+                
+                console.log(`🎯 動態尺寸計算: 遊戲高度${GAME_HEIGHT} → road-1高度${roadHeight}, 寬度${roadWidth} (原始比例${originalRatio.toFixed(2)})`);
+            } else {
+                // 如果沒有原始尺寸，使用預設比例
+                roadHeight = Math.floor(GAME_HEIGHT * scaleRatio);
+                roadWidth = Math.floor(roadHeight * (200/32)); // 預設比例 6.25
+                
+                console.log(`⚠️ 使用預設比例: road-1高度${roadHeight}, 寬度${roadWidth}`);
+            }
+            
+            // 設定road-1位置：與背景齊左，對齊背景下方為97
+            const roadX = 0; // 與背景齊左
+            const roadY = GAME_HEIGHT - 97 - roadHeight; // 對齊背景下方為97，但扣除元件高度
+            
+            // 創建road-1元件
+            world.roads = [
+                {
+                    x: roadX, 
+                    y: roadY, 
+                    width: roadWidth, 
+                    height: roadHeight,
+                    type: 'road-1'
+                }
+            ];
+            
+            // 設置玩家初始位置在road-1元件上方
+            player.x = roadX + 50; // 在road-1左側一點
+            player.y = roadY - player.height; // 站在road-1上方
+            
+            // 終點設在road元件的右側
+            world.endpoint = {x: roadX + roadWidth + 50, y: roadY - 50, width: 100, height: 80};
+        }
+        
+        function setupEventListeners() {
+            document.addEventListener('keydown', (e) => {
+                keys[e.code] = true;
+                if (e.code === 'Space') e.preventDefault();
+            });
+            document.addEventListener('keyup', (e) => {
+                keys[e.code] = false;
+            });
+            window.addEventListener('resize', () => {
+                // 更新遊戲尺寸以適應新的視窗尺寸
+                updateCanvasSize();
+                world.height = GAME_HEIGHT; // 同時更新世界高度
+                
+                // 重新創建世界以適應新尺寸
+                createWorld();
+                
+                // 調整玩家位置
+                player.y = Math.floor(GAME_HEIGHT * 0.5);
+            });
+        }
+        
+        function nextPage() {
+            if (currentStoryPage < maxStoryPages) {
+                document.querySelector(`.story-page[data-page="${currentStoryPage}"]`).classList.remove('active');
+                currentStoryPage++;
+                document.querySelector(`.story-page[data-page="${currentStoryPage}"]`).classList.add('active');
+                
+                if (currentStoryPage === maxStoryPages) {
+                    document.getElementById('nextBtn').classList.add('hidden');
+                    document.getElementById('startBtn').classList.remove('hidden');
+                }
+            }
+        }
+        
+        function startGame() {
+            document.getElementById('storyModal').classList.add('hidden');
+            gameState = 'playing';
+            if (gameLoopId) {
+                cancelAnimationFrame(gameLoopId);
+            }
+            gameLoop();
+        }
+        
+        function update() {
+            if (gameState !== 'playing') return;
+            updatePlayer();
+            updateCamera();
+            checkCollisions();
+            checkEndpoint();
+        }
+        
+        function updatePlayer() {
+            const wasMoving = Math.abs(player.velocityX) > 0.1;
+            
+            if (keys['ArrowLeft']) {
+                player.velocityX = -3;
+                player.facingRight = false;
+            } else if (keys['ArrowRight']) {
+                player.velocityX = 3;
+                player.facingRight = true;
+            } else {
+                player.velocityX *= 0.9;
+            }
+            
+            if (keys['Space'] && player.onGround) {
+                player.velocityY = -8;
+                player.onGround = false;
+            }
+            
+            // 更新動畫狀態
+            const isMoving = Math.abs(player.velocityX) > 0.1;
+            const newAnimation = (isMoving && player.onGround) ? 'running' : 'idle';
+            
+            // 如果動畫狀態改變，重置動畫幀索引和時間
+            if (newAnimation !== currentAnimation) {
+                currentAnimation = newAnimation;
+                animationFrame = 0; // 重置到第一幀
+                lastFrameTime = Date.now(); // 重置時間，避免時間混亂
+            }
+            
+            player.velocityY += world.gravity;
+            player.x += player.velocityX;
+            player.y += player.velocityY;
+            
+            if (player.x < 0) player.x = 0;
+            if (player.x > world.width - player.width) player.x = world.width - player.width;
+            if (player.y > world.height) takeDamage(100);
+            
+            // 更新動畫幀
+            updateAnimation();
+        }
+        
+        function updateAnimation() {
+            const currentTime = Date.now();
+            
+            // 根據動畫類型選擇不同的間隔時間
+            const currentInterval = currentAnimation === 'running' ? runningFrameInterval : idleFrameInterval;
+            
+            if (currentTime - lastFrameTime > currentInterval) {
+                const animFrames = characterSprites[currentAnimation];
+                if (animFrames && animFrames.length > 0) {
+                    // 確保動畫幀索引在有效範圍內
+                    if (animationFrame >= animFrames.length) {
+                        animationFrame = 0;
+                    }
+                    
+                    const previousFrame = animationFrame;
+                    animationFrame = (animationFrame + 1) % animFrames.length;
+                    
+                    // 調試：僅顯示動畫循環重啟
+                    if (currentAnimation === 'running' && previousFrame === 3 && animationFrame === 0) {
+                        console.log(`🔄 跑步動畫循環重啟: character-run-4 → character-run-1 (${runningFrameInterval}ms間隔)`);
+                    } else if (currentAnimation === 'idle' && previousFrame === 1 && animationFrame === 0) {
+                        console.log(`🔄 站立動畫循環重啟: character-idle-2 → character-idle-1 (${idleFrameInterval}ms間隔)`);
+                    }
+                } else {
+                    // 如果沒有動畫，重置動畫幀
+                    animationFrame = 0;
+                    console.log(`⚠️ 沒有找到 ${currentAnimation} 動畫幀，重置為0`);
+                }
+                lastFrameTime = currentTime;
+            }
+        }
+        
+        function updateCamera() {
+            // 使用Math.floor確保攝影機位置為整數，避免閃爍
+            camera.x = Math.floor(player.x - GAME_WIDTH / 2);
+            camera.y = Math.floor(player.y - GAME_HEIGHT / 2);
+            
+            if (camera.x < 0) camera.x = 0;
+            if (camera.x > world.width - GAME_WIDTH) camera.x = Math.max(0, world.width - GAME_WIDTH);
+            if (camera.y < 0) camera.y = 0;
+            if (camera.y > world.height - GAME_HEIGHT) camera.y = world.height - GAME_HEIGHT;
+        }
+        
+
+        
+
+        
+        function checkCollisions() {
+            player.onGround = false;
+            world.roads.forEach(road => {
+                if (player.x < road.x + road.width &&
+                    player.x + player.width > road.x &&
+                    player.y < road.y + road.height &&
+                    player.y + player.height > road.y) {
+                    
+                    if (player.velocityY > 0 && player.y < road.y) {
+                        player.y = road.y - player.height;
+                        player.velocityY = 0;
+                        player.onGround = true;
+                    }
+                }
+            });
+        }
+        
+        function checkEndpoint() {
+            if (world.endpoint &&
+                player.x < world.endpoint.x + world.endpoint.width &&
+                player.x + player.width > world.endpoint.x &&
+                player.y < world.endpoint.y + world.endpoint.height &&
+                player.y + player.height > world.endpoint.y) {
+                endGame(true);
+            }
+        }
+        
+        function takeDamage(amount) {
+            player.health -= amount;
+            if (player.health <= 0) {
+                player.health = 0;
+                endGame(false);
+            }
+            updateUI();
+        }
+        
+        function useHealthPotion() {
+            if (inventory.healthPotions > 0 && player.health < player.maxHealth) {
+                inventory.healthPotions--;
+                player.health = Math.min(player.maxHealth, player.health + 50);
+                updateUI();
+            }
+        }
+        
+        function useShield() {
+            if (inventory.shields > 0 && !player.shieldActive) {
+                inventory.shields--;
+                player.shieldActive = true;
+                player.shieldHits = 0;
+                updateUI();
+            }
+        }
+        
+        function updateUI() {
+            const healthPercent = (player.health / player.maxHealth) * 100;
+            document.getElementById('healthFill').style.width = healthPercent + '%';
+            document.getElementById('healthText').textContent = `HP: ${player.health}/${player.maxHealth}`;
+            document.getElementById('healthCount').textContent = inventory.healthPotions;
+            document.getElementById('shieldCount').textContent = inventory.shields;
+        }
+        
+        function endGame(success) {
+            // 停止遊戲循環
+            if (gameLoopId) {
+                cancelAnimationFrame(gameLoopId);
+                gameLoopId = null;
+            }
+            
+            gameState = 'ended';
+            const modal = document.getElementById('endingModal');
+            const title = document.getElementById('endingTitle');
+            const text = document.getElementById('endingText');
+            
+            if (success) {
+                title.textContent = '🎉 任務成功！';
+                text.innerHTML = `恭喜你成功逃出了實驗室！<br><br>你發現的秘密將改變整個世界...<br><br>在你的努力下，人類終於找到了<br>突破科技極限的關鍵。<br><br>新的時代即將來臨！`;
+            } else {
+                title.textContent = '💀 任務失敗';
+                text.innerHTML = `你在逃脫過程中不幸犧牲了...<br><br>但你的勇氣激勵了其他研究員，<br><br>他們將繼承你的意志，<br>繼續尋找真相。<br><br>你的犧牲不會白費！`;
+            }
+            
+            modal.style.display = 'flex';
+        }
+        
+        function restartGame() {
+            // 停止遊戲循環
+            if (gameLoopId) {
+                cancelAnimationFrame(gameLoopId);
+                gameLoopId = null;
+            }
+            
+            gameState = 'story';
+            currentStoryPage = 1;
+            
+            // 完全重置玩家狀態
+            player = {
+                x: 100, y: Math.floor(GAME_HEIGHT * 0.5), width: 80, height: 80,
+                velocityX: 0, velocityY: 0, onGround: false,
+                health: 100, maxHealth: 100,
+                shieldActive: false, shieldHits: 0,
+                facingRight: true
+            };
+            
+            // 重置動畫狀態
+            currentAnimation = 'idle';
+            animationFrame = 0;
+            lastFrameTime = Date.now();
+            
+            // 重置攝影機
+            camera = { x: 0, y: 0 };
+            
+            // 重置世界
+            createWorld();
+            
+            // 重置庫存
+            inventory = { healthPotions: 2, shields: 1 };
+            
+            // 清除所有按鍵狀態
+            keys = {};
+            
+            updateUI();
+            
+            document.getElementById('endingModal').style.display = 'none';
+            document.getElementById('storyModal').classList.remove('hidden');
+            
+            document.querySelectorAll('.story-page').forEach(page => page.classList.remove('active'));
+            document.querySelector('.story-page[data-page="1"]').classList.add('active');
+            document.getElementById('nextBtn').classList.remove('hidden');
+            document.getElementById('startBtn').classList.add('hidden');
+        }
+        
+        function render() {
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+            
+            drawBackground();
+            drawRoads();
+            drawEndpoint();
+            drawPlayer();
+        }
+        
+        function drawBackground() {
+            if (backgroundLoaded && backgroundImage) {
+                // 計算背景圖片的縮放比例，讓圖片高度填滿畫面
+                const scale = GAME_HEIGHT / backgroundHeight;
+                const scaledWidth = Math.floor(backgroundWidth * scale);
+                const scaledHeight = GAME_HEIGHT;
+                
+                // 計算背景的滾動位置（視差效果）
+                const parallaxSpeed = 0.3; // 背景滾動速度（相對於攝影機速度）
+                const backgroundOffsetX = Math.floor(camera.x * parallaxSpeed) % scaledWidth;
+                
+                // 計算需要繪製的背景圖片數量，確保完整覆蓋
+                const startTile = Math.floor(-backgroundOffsetX / scaledWidth) - 1;
+                const endTile = Math.ceil((GAME_WIDTH - backgroundOffsetX) / scaledWidth) + 1;
+                
+                // 繪製背景圖片以實現無限滾動，確保整數位置
+                for (let i = startTile; i <= endTile; i++) {
+                    const x = Math.floor(i * scaledWidth - backgroundOffsetX);
+                    // 確保繪製尺寸也是整數
+                    ctx.drawImage(backgroundImage, x, 0, Math.floor(scaledWidth), Math.floor(scaledHeight));
+                }
+            } else {
+                // 如果背景圖片載入失敗，使用原來的星空背景
+                ctx.fillStyle = '#ffffff';
+                for (let i = 0; i < 100; i++) {
+                    const x = (i * 137) % world.width - camera.x;
+                    const y = (i * 73) % world.height - camera.y;
+                    if (x >= -10 && x <= GAME_WIDTH + 10 && y >= -10 && y <= GAME_HEIGHT + 10) {
+                        ctx.fillRect(x, y, 2, 2);
+                    }
+                }
+            }
+        }
+        
+        // 路面圖片載入
+        let roadImages = {};
+        let roadOriginalSizes = {}; // 儲存原始尺寸
+        let roadsLoaded = false;
+
+        function loadRoadImages() {
+            const roadTypes = ['road-1'];
+            let loadedCount = 0;
+            
+            roadTypes.forEach(type => {
+                const img = new Image();
+                img.onload = function() {
+                    roadImages[type] = img;
+                    // 記錄原始尺寸
+                    roadOriginalSizes[type] = {
+                        width: this.naturalWidth || this.width,
+                        height: this.naturalHeight || this.height
+                    };
+                    loadedCount++;
+                    console.log(`✅ 路面圖片載入完成: ${type}.svg (${roadOriginalSizes[type].width}x${roadOriginalSizes[type].height})`);
+                    
+                    if (loadedCount === roadTypes.length) {
+                        roadsLoaded = true;
+                        console.log('🛣️ 所有路面圖片載入完成！');
+                        // 圖片載入完成後重新創建世界以應用正確尺寸
+                        if (typeof createWorld === 'function') {
+                            createWorld();
+                        }
+                    }
+                };
+                img.onerror = function() {
+                    console.log(`❌ 路面圖片載入失敗: ${type}.svg`);
+                    // 使用預設尺寸
+                    roadOriginalSizes[type] = {
+                        width: 200,
+                        height: 32
+                    };
+                    loadedCount++;
+                    if (loadedCount === roadTypes.length) {
+                        roadsLoaded = true;
+                        if (typeof createWorld === 'function') {
+                            createWorld();
+                        }
+                    }
+                };
+                img.src = `${type}.svg`;
+            });
+        }
+
+        function drawRoads() {
+            world.roads.forEach(road => {
+                // 使用Math.floor確保整數像素位置，避免閃爍
+                const x = Math.floor(road.x - camera.x);
+                const y = Math.floor(road.y - camera.y);
+                
+                if (x + road.width >= 0 && x <= GAME_WIDTH &&
+                    y + road.height >= 0 && y <= GAME_HEIGHT) {
+                    
+                    // 嘗試繪製SVG圖片
+                    if (roadsLoaded && roadImages[road.type]) {
+                        ctx.save();
+                        ctx.imageSmoothingEnabled = false;
+                        ctx.drawImage(roadImages[road.type], x, y, road.width, road.height);
+                        ctx.restore();
+                    } else {
+                        // 如果圖片未載入，繪製預設的綠色方塊
+                        ctx.fillStyle = '#228B22';
+                        ctx.strokeStyle = '#32CD32';
+                        ctx.lineWidth = 2;
+                        ctx.fillRect(x, y, road.width, road.height);
+                        ctx.strokeRect(x, y, road.width, road.height);
+                        
+                        // 顯示文字標示
+                        ctx.fillStyle = '#ffffff';
+                        ctx.font = '16px "Press Start 2P"';
+                        ctx.fillText(road.type, x + 10, y + 30);
+                    }
+                }
+            });
+        }
+        
+
+        
+        function drawEndpoint() {
+            if (!world.endpoint) return;
+            
+            // 使用Math.floor確保整數像素位置，避免閃爍
+            const x = Math.floor(world.endpoint.x - camera.x);
+            const y = Math.floor(world.endpoint.y - camera.y);
+            
+            if (x + world.endpoint.width >= 0 && x <= GAME_WIDTH &&
+                y + world.endpoint.height >= 0 && y <= GAME_HEIGHT) {
+                
+                ctx.fillStyle = '#0088ff';
+                ctx.fillRect(x, y, world.endpoint.width, world.endpoint.height);
+                
+                ctx.fillStyle = '#ffffff';
+                ctx.font = '16px "Press Start 2P"';
+                ctx.fillText('🔬', x + 40, y + 25);
+                ctx.font = '8px "Press Start 2P"';
+                ctx.fillText('LAB', x + 35, y + 45);
+            }
+        }
+        
+
+        
+        function drawPlayer() {
+            // 使用Math.floor確保整數像素位置，避免閃爍
+            const x = Math.floor(player.x - camera.x);
+            const y = Math.floor(player.y - camera.y);
+            
+            // 檢查是否有有效的動畫幀
+            const animFrames = characterSprites[currentAnimation];
+            
+            // 確保動畫幀索引在有效範圍內
+            if (animFrames && animFrames.length > 0 && animationFrame >= animFrames.length) {
+                console.log(`⚠️ 動畫幀索引超出範圍: ${animationFrame} >= ${animFrames.length}，重置為0`);
+                animationFrame = 0;
+            }
+            
+            const hasValidSprite = animFrames && 
+                                  animFrames.length > 0 && 
+                                  animationFrame < animFrames.length &&
+                                  animFrames[animationFrame] && 
+                                  animFrames[animationFrame].complete;
+            
+            // 調試信息（僅在需要時顯示）
+            if (currentAnimation === 'running' && !hasValidSprite) {
+                console.log(`❌ 跑步動畫幀無效: 索引${animationFrame}, 動畫數組長度${animFrames?.length}`);
+            }
+            
+            if (hasValidSprite) {
+                // 繪製自定義角色動畫
+                const sprite = animFrames[animationFrame];
+                
+                ctx.save();
+                
+                // 設置高品質渲染
+                ctx.imageSmoothingEnabled = false;
+                ctx.imageSmoothingQuality = 'high';
+                
+                // 如果面向左邊，水平翻轉
+                if (!player.facingRight) {
+                    ctx.scale(-1, 1);
+                    ctx.drawImage(sprite, -(x + player.width), y, player.width, player.height);
+                } else {
+                    ctx.drawImage(sprite, x, y, player.width, player.height);
+                }
+                
+                ctx.restore();
+            } else {
+                // 使用預設的emoji角色
+                ctx.fillStyle = '#ff6b6b';
+                ctx.fillRect(x, y, player.width, player.height);
+                
+                ctx.fillStyle = '#ffffff';
+                ctx.font = '26px "Press Start 2P"';
+                
+                // 根據面向方向調整emoji
+                if (!player.facingRight) {
+                    // 面向左邊時稍微偏移
+                    ctx.fillText('🧑‍🔬', x + 15, y + 35);
+                } else {
+                    ctx.fillText('🧑‍🔬', x + 18, y + 35);
+                }
+            }
+            
+            // 繪製防護罩效果
+            if (player.shieldActive) {
+                ctx.strokeStyle = '#00ffff';
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.arc(x + player.width/2, y + player.height/2, 30, 0, Math.PI * 2);
+                ctx.stroke();
+                
+                ctx.fillStyle = '#00ffff';
+                ctx.font = '12px "Press Start 2P"';
+                ctx.fillText(`${3 - player.shieldHits}`, x + player.width + 8, y + 15);
+            }
+        }
+        
+        function gameLoop() {
+            update();
+            render();
+            if (gameState === 'playing') {
+                gameLoopId = requestAnimationFrame(gameLoop);
+            }
+        }
+        
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
