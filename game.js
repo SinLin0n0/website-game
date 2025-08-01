@@ -24,12 +24,25 @@ let currentAnimation = 'idle';
 let animationFrame = 0;
 let lastFrameTime = 0;
 let idleFrameInterval = 300; // 站立動畫：0.3秒換一張
-let runningFrameInterval = 100; // 跑步動畫：0.1秒換一張
+let runningFrameInterval = 70; // 跑步動畫：0.07秒換一張
 let spritesLoaded = false;
+
+// 角色大小動態計算
+function calculatePlayerSize() {
+    const playerHeightRatio = 109 / 512; // 109像素高度在512背景中的比例 (21.29%)
+    const dynamicHeight = Math.floor(GAME_HEIGHT * playerHeightRatio);
+    // 假設角色寬高比為1:1，保持方形比例，如果有特定比例可以調整
+    const dynamicWidth = dynamicHeight; // 保持方形，或可根據實際圖片比例調整
+    
+    return {
+        width: dynamicWidth,
+        height: dynamicHeight
+    };
+}
 
 // 遊戲物件
 let player = {
-    x: 100, y: 0, width: 80, height: 80, // y位置會在初始化時設定
+    x: 100, y: 0, width: 80, height: 80, // 初始值，會在init時動態計算
     velocityX: 0, velocityY: 0, onGround: false,
     health: 100, maxHealth: 100,
     shieldActive: false, shieldHits: 0,
@@ -127,7 +140,7 @@ function loadCharacterSprites() {
             console.log('  跑步動畫:', characterSprites.running.length, '幀');
             console.log('⏱️ 動畫速度設定:');
             console.log(`  站立動畫：每${idleFrameInterval}ms切換一幀 (0.3秒)`);
-            console.log(`  跑步動畫：每${runningFrameInterval}ms切換一幀 (0.1秒)`);
+            console.log(`  跑步動畫：每${runningFrameInterval}ms切換一幀 (0.07秒)`);
             console.log('🏃 跑步動畫順序確認:');
             characterSprites.running.forEach((sprite, i) => {
                 console.log(`  索引${i}: ${runningFramePaths[i]} ✅`);
@@ -176,6 +189,11 @@ function init() {
     // 設置遊戲尺寸
     updateCanvasSize();
     
+    // 動態計算並設置角色大小
+    const playerSize = calculatePlayerSize();
+    player.width = playerSize.width;
+    player.height = playerSize.height;
+    
     // 設置世界高度等於遊戲高度
     world.height = GAME_HEIGHT;
     
@@ -215,11 +233,36 @@ function createWorld() {
     const roadWidth = Math.floor(GAME_WIDTH * roadRatio);
     const roadHeight = Math.floor(GAME_HEIGHT * roadRatio);
     
-    // 設定road-1位置：與背景齊左，對齊背景下方為97
+    // 設定road-1位置：與背景齊左，動態計算底部距離
     const roadX = 0; // 與背景齊左
-    const roadY = GAME_HEIGHT - 97 - roadHeight; // 對齊背景下方為97，但扣除元件高度
+    const bottomDistanceRatio = 93 / 512; // 93像素距離在512高度背景中的比例 (18.16%)
+    const dynamicBottomDistance = Math.floor(GAME_HEIGHT * bottomDistanceRatio);
+    const roadY = GAME_HEIGHT - dynamicBottomDistance - roadHeight; // 動態計算底部距離
     
-    // 創建road-1元件
+    // 計算road-kanban元件尺寸，原始比例為94:105
+    const kanbanAspectRatio = 94 / 105; // 寬高比
+    const kanbanHeightRatio = 105 / 512; // 105像素高度在512背景中的比例 (20.51%)
+    const kanbanHeight = Math.floor(GAME_HEIGHT * kanbanHeightRatio);
+    const kanbanWidth = Math.floor(kanbanHeight * kanbanAspectRatio); // 等比縮放
+    
+    // 設定road-kanban位置：底部對齊road-1頂部，左邊距離動態調整
+    const kanbanLeftDistanceRatio = 37 / 512; // 37像素距離在512高度背景中的比例 (7.23%)
+    const kanbanX = Math.floor(GAME_HEIGHT * kanbanLeftDistanceRatio); // 使用背景高度計算左邊距
+    const kanbanY = roadY - kanbanHeight; // 底部對齊road-1頂部
+    
+    // 計算road-2元件尺寸，原始比例為171:32
+    const road2AspectRatio = 171 / 32; // 寬高比
+    const road2HeightRatio = 32 / 512; // 32像素高度在512背景中的比例 (6.25%)
+    const road2Height = Math.floor(GAME_HEIGHT * road2HeightRatio);
+    const road2Width = Math.floor(road2Height * road2AspectRatio); // 等比縮放
+    
+    // 設定road-2位置：底部對齊背景底部，左邊對齊road-1右邊
+    const road2BottomDistanceRatio = 202 / 512; // 202像素距離在512背景中的比例 (39.45%)
+    const road2LeftDistanceRatio = 135 / 512; // 135像素距離在512背景中的比例 (26.37%)
+    const road2X = Math.floor(GAME_WIDTH * road2LeftDistanceRatio); // 使用背景寬度計算左邊距
+    const road2Y = GAME_HEIGHT - Math.floor(GAME_HEIGHT * road2BottomDistanceRatio) - road2Height; // 底部對齊背景底部
+    
+    // 創建road元件
     world.roads = [
         {
             x: roadX, 
@@ -227,6 +270,20 @@ function createWorld() {
             width: roadWidth, 
             height: roadHeight,
             type: 'road-1'
+        },
+        {
+            x: kanbanX,
+            y: kanbanY,
+            width: kanbanWidth,
+            height: kanbanHeight,
+            type: 'road-kanban'
+        },
+        {
+            x: road2X,
+            y: road2Y,
+            width: road2Width,
+            height: road2Height,
+            type: 'road-2'
         }
     ];
     
@@ -234,8 +291,8 @@ function createWorld() {
     player.x = roadX + 50; // 在road-1左側一點
     player.y = roadY - player.height; // 站在road-1上方
     
-    // 終點設在road元件的右側
-    world.endpoint = {x: roadX + roadWidth + 50, y: roadY - 50, width: 100, height: 80};
+    // 已刪除終點設定（lab 藍色框框）
+    world.endpoint = null;
 }
 
 function setupEventListeners() {
@@ -250,6 +307,11 @@ function setupEventListeners() {
         // 更新遊戲尺寸以適應新的視窗尺寸
         updateCanvasSize();
         world.height = GAME_HEIGHT; // 同時更新世界高度
+        
+        // 動態重新計算角色大小
+        const playerSize = calculatePlayerSize();
+        player.width = playerSize.width;
+        player.height = playerSize.height;
         
         // 重新創建世界以適應新尺寸（會自動調整玩家位置）
         createWorld();
@@ -296,7 +358,7 @@ function endGame(success) {
     
     if (success) {
         title.textContent = '🎉 任務成功！';
-        text.innerHTML = `恭喜你成功逃出了實驗室！<br><br>你發現的秘密將改變整個世界...<br><br>在你的努力下，人類終於找到了<br>突破科技極限的關鍵。<br><br>新的時代即將來臨！`;
+        text.innerHTML = `恭喜你成功逃出了危險！<br><br>你發現的秘密將改變整個世界...<br><br>在你的努力下，人類終於找到了<br>突破科技極限的關鍵。<br><br>新的時代即將來臨！`;
     } else {
         title.textContent = '💀 任務失敗';
         text.innerHTML = `你在逃脫過程中不幸犧牲了...<br><br>但你的勇氣激勵了其他研究員，<br><br>他們將繼承你的意志，<br>繼續尋找真相。<br><br>你的犧牲不會白費！`;
@@ -315,9 +377,13 @@ function restartGame() {
     gameState = 'story';
     currentStoryPage = 1;
     
+    // 動態計算角色大小
+    const playerSize = calculatePlayerSize();
+    
     // 完全重置玩家狀態（位置將在createWorld中設定）
     player = {
-        x: 100, y: Math.floor(GAME_HEIGHT * 0.5), width: 80, height: 80,
+        x: 100, y: Math.floor(GAME_HEIGHT * 0.5), 
+        width: playerSize.width, height: playerSize.height,
         velocityX: 0, velocityY: 0, onGround: false,
         health: 100, maxHealth: 100,
         shieldActive: false, shieldHits: 0,
@@ -455,6 +521,11 @@ function updateCamera() {
 function checkCollisions() {
     player.onGround = false;
     world.roads.forEach(road => {
+        // road-kanban 作為背景，不參與碰撞檢測
+        if (road.type === 'road-kanban') {
+            return; // 跳過 road-kanban 的碰撞檢測
+        }
+        
         if (player.x < road.x + road.width &&
             player.x + player.width > road.x &&
             player.y < road.y + road.height &&
@@ -470,13 +541,8 @@ function checkCollisions() {
 }
 
 function checkEndpoint() {
-    if (world.endpoint &&
-        player.x < world.endpoint.x + world.endpoint.width &&
-        player.x + player.width > world.endpoint.x &&
-        player.y < world.endpoint.y + world.endpoint.height &&
-        player.y + player.height > world.endpoint.y) {
-        endGame(true);
-    }
+    // 已刪除終點檢測（lab 藍色框框）
+    return;
 }
 
 function takeDamage(amount) {
@@ -527,7 +593,7 @@ function render() {
     
     drawBackground();
     drawRoads();
-    drawEndpoint();
+    // drawEndpoint(); // 已刪除 lab 藍色框框
     drawPlayer();
 }
 
@@ -570,7 +636,7 @@ let roadImages = {};
 let roadsLoaded = false;
 
 function loadRoadImages() {
-    const roadTypes = ['road-1'];
+    const roadTypes = ['road-1', 'road-kanban', 'road-2'];
     let loadedCount = 0;
     
     roadTypes.forEach(type => {
@@ -629,24 +695,8 @@ function drawRoads() {
 }
 
 function drawEndpoint() {
-    if (!world.endpoint) return;
-    
-    // 使用Math.floor確保整數像素位置，避免閃爍
-    const x = Math.floor(world.endpoint.x - camera.x);
-    const y = Math.floor(world.endpoint.y - camera.y);
-    
-    if (x + world.endpoint.width >= 0 && x <= GAME_WIDTH &&
-        y + world.endpoint.height >= 0 && y <= GAME_HEIGHT) {
-        
-        ctx.fillStyle = '#0088ff';
-        ctx.fillRect(x, y, world.endpoint.width, world.endpoint.height);
-        
-        ctx.fillStyle = '#ffffff';
-        ctx.font = '16px "Press Start 2P"';
-        ctx.fillText('🔬', x + 40, y + 25);
-        ctx.font = '8px "Press Start 2P"';
-        ctx.fillText('LAB', x + 35, y + 45);
-    }
+    // 已刪除 lab 藍色框框
+    return;
 }
 
 function drawPlayer() {
