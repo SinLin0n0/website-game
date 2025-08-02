@@ -1120,6 +1120,57 @@
             hpLogoManager.createHorizontalHpLogos(firstRoad4HpLogoX, firstRoad4HpLogoY, 5, road4HpLogoSpacing, GAME_HEIGHT);
             
             console.log('🩹 在road-4上創建5個HP Logo完成，位置:', { x: firstRoad4HpLogoX, y: firstRoad4HpLogoY });
+
+            // 創建5個road-short-1（掉落平台）
+            const roadShort1HeightRatio = 21 / 512; // 21像素高度在512背景中的比例 (4.10%)
+            let roadShort1Width, roadShort1Height;
+            
+            if (roadOriginalSizes['road-short-1']) {
+                const originalSize = roadOriginalSizes['road-short-1'];
+                const originalRatio = originalSize.width / originalSize.height;
+                
+                // 根據當前遊戲高度計算road-short-1高度
+                roadShort1Height = Math.floor(GAME_HEIGHT * roadShort1HeightRatio);
+                // 根據原始比例計算寬度
+                roadShort1Width = Math.floor(roadShort1Height * originalRatio);
+                
+                console.log(`🎯 Road-short-1動態尺寸計算: 遊戲高度${GAME_HEIGHT} → road-short-1高度${roadShort1Height}, 寬度${roadShort1Width} (原始比例${originalRatio.toFixed(2)})`);
+            } else {
+                // 如果沒有原始尺寸，使用預設比例，假設寬高比為3:1
+                roadShort1Height = Math.floor(GAME_HEIGHT * roadShort1HeightRatio);
+                roadShort1Width = Math.floor(roadShort1Height * 3); // 預設比例
+                
+                console.log(`⚠️ Road-short-1使用預設比例: 高度${roadShort1Height}, 寬度${roadShort1Width}`);
+            }
+
+            // 計算road-short-1位置
+            const roadShort1LeftDistanceRatio = 24 / 512; // 24像素距離在512背景中的比例 (4.69%)
+            const roadShort1SpacingRatio = 40 / 512; // 40像素間距在512背景中的比例 (7.81%)
+            
+            const roadShort1LeftDistance = Math.floor(GAME_HEIGHT * roadShort1LeftDistanceRatio);
+            const roadShort1Spacing = Math.floor(GAME_HEIGHT * roadShort1SpacingRatio);
+            
+            // 第一個road-short-1位置
+            const firstRoadShort1X = road4X + road4Width + roadShort1LeftDistance; // road-short-1左邊與road-4右邊距離24像素
+            const firstRoadShort1Y = road4Y; // road-short-1頂部與road-4頂部貼齊
+
+            // 創建5個road-short-1並添加到world.roads
+            for (let i = 0; i < 5; i++) {
+                world.roads.push({
+                    x: firstRoadShort1X + i * (roadShort1Width + roadShort1Spacing),
+                    y: firstRoadShort1Y,
+                    width: roadShort1Width,
+                    height: roadShort1Height,
+                    type: 'road-short-1',
+                    id: `road-short-1-${i + 1}`,
+                    isFalling: false,
+                    fallStartTime: 0,
+                    fallDuration: 1000, // 1秒後掉落
+                    originalY: firstRoadShort1Y
+                });
+            }
+
+            console.log('🏗️ 5個road-short-1創建完成:', world.roads.filter(r => r.type === 'road-short-1'));
             
             // 同步到舊系統（向後兼容）
             springs = springManager.springs;
@@ -1220,6 +1271,7 @@
             updateCamera();
             checkCollisions();
             springManager.checkTriggerCollisions(player);
+            updateFallingPlatforms();
             checkEndpoint();
         }
         
@@ -1366,6 +1418,13 @@
                         player.y = road.y - player.height;
                         player.velocityY = 0;
                         player.onGround = true;
+                        
+                        // 如果是road-short-1，觸發掉落
+                        if (road.type === 'road-short-1' && !road.isFalling) {
+                            road.isFalling = true;
+                            road.fallStartTime = Date.now();
+                            console.log(`⚠️ 玩家踩到 ${road.id}，開始掉落！`);
+                        }
                     }
                 }
             });
@@ -1384,6 +1443,29 @@
 
 
         
+        function updateFallingPlatforms() {
+            const currentTime = Date.now();
+            
+            world.roads.forEach(road => {
+                if (road.type === 'road-short-1' && road.isFalling) {
+                    const fallProgress = (currentTime - road.fallStartTime) / road.fallDuration;
+                    
+                    if (fallProgress >= 1) {
+                        // 掉落完成，移除平台
+                        const index = world.roads.indexOf(road);
+                        if (index > -1) {
+                            world.roads.splice(index, 1);
+                            console.log(`💥 ${road.id} 掉落完成，已移除`);
+                        }
+                    } else {
+                        // 正在掉落，更新Y位置
+                        const fallDistance = 200; // 掉落距離
+                        road.y = road.originalY + (fallDistance * fallProgress);
+                    }
+                }
+            });
+        }
+
         function checkEndpoint() {
             // 已刪除終點檢測（lab 藍色框框）
             return;
@@ -1491,6 +1573,15 @@
             // 重置HP Logo收集計數和狀態
             collectedHpCount = 0;
             hpLogoManager.reset();
+            
+            // 重置road-short-1掉落狀態
+            world.roads.forEach(road => {
+                if (road.type === 'road-short-1') {
+                    road.isFalling = false;
+                    road.fallStartTime = 0;
+                    road.y = road.originalY;
+                }
+            });
             
             // Spring已在createWorld()中清空並重新創建，只需重置狀態
             springManager.reset();
@@ -2050,7 +2141,7 @@
 
 
         function loadRoadImages() {
-            const roadTypes = ['road-1', 'road-kanban', 'road-2', 'road-3', 'road-4', 'road-mid', 'house-1', 'house-2', 'house-3', 'house-4', 'house-5'];
+            const roadTypes = ['road-1', 'road-kanban', 'road-2', 'road-3', 'road-4', 'road-mid', 'road-short-1', 'house-1', 'house-2', 'house-3', 'house-4', 'house-5'];
             let loadedCount = 0;
             
             roadTypes.forEach(type => {
@@ -2109,12 +2200,26 @@
                         ctx.drawImage(roadImages[road.type], x, y, road.width, road.height);
                         ctx.restore();
                     } else {
-                        // 如果圖片未載入，繪製預設的綠色方塊
-                        ctx.fillStyle = '#228B22';
-                        ctx.strokeStyle = '#32CD32';
+                        // 如果圖片未載入，繪製預設的方塊
+                        if (road.type === 'road-short-1' && road.isFalling) {
+                            // 掉落中的road-short-1顯示為紅色
+                            ctx.fillStyle = '#FF4444';
+                            ctx.strokeStyle = '#FF0000';
+                        } else {
+                            // 其他road顯示為綠色
+                            ctx.fillStyle = '#228B22';
+                            ctx.strokeStyle = '#32CD32';
+                        }
                         ctx.lineWidth = 2;
                         ctx.fillRect(x, y, road.width, road.height);
                         ctx.strokeRect(x, y, road.width, road.height);
+                        
+                        // 為road-short-1添加標籤
+                        if (road.type === 'road-short-1') {
+                            ctx.fillStyle = '#FFFFFF';
+                            ctx.font = '8px Arial';
+                            ctx.fillText(road.id, x + 2, y + 10);
+                        }
                         
                         // 顯示文字標示
                         ctx.fillStyle = '#ffffff';
