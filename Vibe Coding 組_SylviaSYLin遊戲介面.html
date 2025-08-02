@@ -271,6 +271,12 @@
         let endAudio = null;
         let endAudioVolume = 0.6; // 結束音效音量60%
         
+        // Cloud 音效管理
+        let cloudAudio = null;
+        let cloudAudioVolume = 0.5; // Cloud 音效音量50%
+        let isCloudAudioPlaying = false; // 追蹤 Cloud 音效是否正在播放
+        let cloudAudioPlayCount = 0; // 追蹤播放次數
+        
         // 背景圖片變數
         let backgroundImage = null;
         let backgroundWidth = 0;
@@ -528,6 +534,7 @@
             initHpLogoAudio();
             initRunningAudio();
             initEndAudio();
+            initCloudAudio();
             
             gameLoop(); // 啟動遊戲循環以顯示前言背景
         }
@@ -2165,6 +2172,57 @@
             }
         }
         
+        function initCloudAudio() {
+            try {
+                cloudAudio = new Audio('sound/light.mp3');
+                cloudAudio.volume = cloudAudioVolume;
+                console.log('🔊 Cloud 音效初始化完成（音量：' + (cloudAudioVolume * 100) + '%）');
+            } catch (error) {
+                console.log('🚫 Cloud 音效初始化失敗:', error);
+            }
+        }
+        
+        function startCloudAudio() {
+            if (cloudAudio && !isCloudAudioPlaying) {
+                isCloudAudioPlaying = true;
+                cloudAudioPlayCount = 0; // 重置播放次數
+                
+                // 立即播放第一次
+                playCloudAudio();
+                cloudAudioPlayCount++;
+                console.log('☁️ 開始播放 Cloud 音效（播放兩次，每次間隔9秒）');
+                
+                // 隔9秒播放第二次
+                setTimeout(() => {
+                    if (isCloudAudioPlaying) {
+                        playCloudAudio();
+                        cloudAudioPlayCount++;
+                        console.log('☁️ Cloud 音效播放完成兩次');
+                        isCloudAudioPlaying = false;
+                    }
+                }, 9000); // 9秒延遲
+            }
+        }
+        
+        function stopCloudAudio() {
+            if (cloudAudio && isCloudAudioPlaying) {
+                isCloudAudioPlaying = false;
+                cloudAudioPlayCount = 0; // 重置播放次數
+                console.log('☁️ 停止播放 Cloud 音效');
+            }
+        }
+        
+        function playCloudAudio() {
+            if (cloudAudio && isCloudAudioPlaying) {
+                cloudAudio.currentTime = 0; // 重置播放位置
+                cloudAudio.volume = cloudAudioVolume; // 確保音量正確
+                
+                cloudAudio.play().catch(e => {
+                    console.log('🚫 Cloud 音效播放失敗:', e);
+                });
+            }
+        }
+        
         // 音樂管理函數
         function initGameBGM() {
             try {
@@ -3347,6 +3405,9 @@
                 
                 // 啟動閃電系統
                 lightningManager.startLightning();
+                
+                // 開始播放 Cloud 音效
+                startCloudAudio();
             }
 
             // 更新動畫
@@ -3415,6 +3476,17 @@
                 });
             }
 
+            // 停止動畫
+            stopAnimation() {
+                if (!this.animationStarted) return;
+                
+                this.animationStarted = false;
+                console.log('☁️ Cloud動畫停止！');
+                
+                // 停止播放 Cloud 音效
+                stopCloudAudio();
+            }
+            
             // 重置
             reset() {
                 this.clouds = [];
@@ -3423,14 +3495,30 @@
                 this.cloud1StartTime = null;
                 this.cloud2StartTime = null;
                 this.cloud3StartTime = null;
+                
+                // 停止播放 Cloud 音效
+                stopCloudAudio();
             }
 
             // 檢查是否應該啟動動畫
             checkTrigger(player, house3X, house3Width) {
-                if (this.animationStarted) return;
+                // 檢查主角是否在road-short-1或road-short-2上
+                const isOnShortRoad = world.roads.some(road => 
+                    (road.type === 'road-short-1' || road.type === 'road-short-2') &&
+                    player.x >= road.x && player.x <= road.x + road.width &&
+                    player.y >= road.y && player.y <= road.y + road.height
+                );
                 
-                // 檢查主角是否走到house-3
-                if (player.x >= house3X && player.x <= house3X + house3Width) {
+                if (this.animationStarted) {
+                    // 檢查主角是否離開house-3範圍或進入short road
+                    if (player.x < house3X || player.x > house3X + house3Width || isOnShortRoad) {
+                        this.stopAnimation();
+                    }
+                    return;
+                }
+                
+                // 檢查主角是否走到house-3且不在short road上
+                if (player.x >= house3X && player.x <= house3X + house3Width && !isOnShortRoad) {
                     this.startAnimation();
                 }
             }
@@ -3596,6 +3684,9 @@
                 
                 // 啟動閃電系統
                 lightningManager2.startLightning();
+                
+                // 開始播放 Cloud 音效
+                startCloudAudio();
             }
 
             // 更新動畫
@@ -3664,6 +3755,17 @@
                 });
             }
 
+            // 停止動畫
+            stopAnimation() {
+                if (!this.animationStarted) return;
+                
+                this.animationStarted = false;
+                console.log('☁️ Cloud2動畫停止！');
+                
+                // 停止播放 Cloud 音效
+                stopCloudAudio();
+            }
+            
             // 重置
             reset() {
                 this.clouds = [];
@@ -3672,14 +3774,30 @@
                 this.cloud1StartTime = null;
                 this.cloud2StartTime = null;
                 this.cloud3StartTime = null;
+                
+                // 停止播放 Cloud 音效
+                stopCloudAudio();
             }
 
             // 檢查是否應該啟動動畫
             checkTrigger(player, house7X, house7Width) {
-                if (this.animationStarted) return;
+                // 檢查主角是否在road-short-1或road-short-2上
+                const isOnShortRoad = world.roads.some(road => 
+                    (road.type === 'road-short-1' || road.type === 'road-short-2') &&
+                    player.x >= road.x && player.x <= road.x + road.width &&
+                    player.y >= road.y && player.y <= road.y + road.height
+                );
                 
-                // 檢查主角是否走到house-7
-                if (player.x >= house7X && player.x <= house7X + house7Width) {
+                if (this.animationStarted) {
+                    // 檢查主角是否離開house-7範圍或進入short road
+                    if (player.x < house7X || player.x > house7X + house7Width || isOnShortRoad) {
+                        this.stopAnimation();
+                    }
+                    return;
+                }
+                
+                // 檢查主角是否走到house-7且不在short road上
+                if (player.x >= house7X && player.x <= house7X + house7Width && !isOnShortRoad) {
                     this.startAnimation();
                 }
             }
