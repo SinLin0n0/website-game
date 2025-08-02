@@ -2952,15 +2952,20 @@
             // 重置攝影機
             camera = { x: 0, y: 0 };
             
-            // 重置世界
+            // 先重置所有管理器狀態
+            springManager.reset();
+            cloudManager.reset();
+            cloudManager2.reset();
+            lightningManager.reset();
+            lightningManager2.reset();
+            heartManager.reset();
+            hpLogoManager.reset();
+            
+            // 重置世界（這會重新創建雲朵）
             createWorld();
             
             // 重置庫存
             inventory = { healthPotions: 2, shields: 1 };
-            
-            // 重置HP Logo收集計數和狀態
-            // collectedHpCount重置已移除
-            hpLogoManager.reset();
             
             // 重置road-short-1和road-short-2掉落狀態
             world.roads.forEach(road => {
@@ -2970,14 +2975,6 @@
                     road.y = road.originalY;
                 }
             });
-            
-            // Spring已在createWorld()中清空並重新創建，只需重置狀態
-            springManager.reset();
-            cloudManager.reset();
-            cloudManager2.reset();
-            lightningManager.reset();
-            lightningManager2.reset();
-            heartManager.reset();
             
             // 清除所有按鍵狀態
             keys = {};
@@ -3037,14 +3034,20 @@
             // 重置攝影機
             camera = { x: 0, y: 0 };
             
-            // 重置世界
+            // 先重置所有管理器狀態
+            springManager.reset();
+            cloudManager.reset();
+            cloudManager2.reset();
+            lightningManager.reset();
+            lightningManager2.reset();
+            heartManager.reset();
+            hpLogoManager.reset();
+            
+            // 重置世界（這會重新創建雲朵）
             createWorld();
             
             // 重置庫存
             inventory = { healthPotions: 2, shields: 1 };
-            
-            // 重置HP Logo收集計數和狀態
-            hpLogoManager.reset();
             
             // 重置road-short-1和road-short-2掉落狀態
             world.roads.forEach(road => {
@@ -3054,14 +3057,6 @@
                     road.y = road.originalY;
                 }
             });
-            
-            // 重置所有管理器狀態
-            springManager.reset();
-            cloudManager.reset();
-            cloudManager2.reset();
-            lightningManager.reset();
-            lightningManager2.reset();
-            heartManager.reset();
             
             // 清除所有按鍵狀態
             keys = {};
