@@ -264,8 +264,12 @@
         
         // 跑步音效管理
         let runningAudio = null;
-        let runningAudioVolume = 0.2; // 跑步音效音量40%
+        let runningAudioVolume = 0.2; // 跑步音效音量20%
         let isRunningAudioPlaying = false; // 追蹤跑步音效是否正在播放
+        
+        // 結束音效管理
+        let endAudio = null;
+        let endAudioVolume = 0.6; // 結束音效音量60%
         
         // 背景圖片變數
         let backgroundImage = null;
@@ -523,6 +527,7 @@
             initJumpAudio();
             initHpLogoAudio();
             initRunningAudio();
+            initEndAudio();
             
             gameLoop(); // 啟動遊戲循環以顯示前言背景
         }
@@ -2140,6 +2145,26 @@
             }
         }
         
+        function initEndAudio() {
+            try {
+                endAudio = new Audio('sound/end.mp3');
+                endAudio.volume = endAudioVolume;
+                console.log('🔊 結束音效初始化完成（音量：' + (endAudioVolume * 100) + '%）');
+            } catch (error) {
+                console.log('🚫 結束音效初始化失敗:', error);
+            }
+        }
+        
+        function playEndAudio() {
+            if (endAudio) {
+                endAudio.currentTime = 0; // 重置播放位置
+                endAudio.volume = endAudioVolume; // 確保音量正確
+                endAudio.play().catch(e => {
+                    console.log('🚫 結束音效播放失敗:', e);
+                });
+            }
+        }
+        
         // 音樂管理函數
         function initGameBGM() {
             try {
@@ -2496,6 +2521,9 @@
                             road.type = 'laboratory-2';
                             player.controlDisabled = true; // 禁用主角控制
                             console.log('🏥 Laboratory-1轉換為Laboratory-2！主角控制已禁用');
+                            
+                            // 播放結束音效
+                            playEndAudio();
                         } else {
                             // 光球數量不足，阻止進入
                             player.x = triggerX - 1; // 阻止進入
