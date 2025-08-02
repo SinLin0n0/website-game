@@ -255,8 +255,12 @@
         
         // 跳躍音效管理
         let jumpAudio = null;
-        let jumpAudioVolume = 0.6; // 跳躍音效音量60%
+        let jumpAudioVolume = 0.7; // 跳躍音效音量60%
         let lastJumpAnimation = null; // 追蹤上一次的跳躍動畫狀態
+        
+        // HP Logo 音效管理
+        let hpLogoAudio = null;
+        let hpLogoAudioVolume = 0.3; // HP Logo 音效音量70%
         
         // 背景圖片變數
         let backgroundImage = null;
@@ -512,6 +516,7 @@
             // 初始化音效系統
             initButtonAudio();
             initJumpAudio();
+            initHpLogoAudio();
             
             gameLoop(); // 啟動遊戲循環以顯示前言背景
         }
@@ -2072,6 +2077,26 @@
                 jumpAudio.volume = jumpAudioVolume; // 確保音量正確
                 jumpAudio.play().catch(e => {
                     console.log('🚫 跳躍音效播放失敗:', e);
+                });
+            }
+        }
+        
+        function initHpLogoAudio() {
+            try {
+                hpLogoAudio = new Audio('sound/gethp.mp3');
+                hpLogoAudio.volume = hpLogoAudioVolume;
+                console.log('🔊 HP Logo 音效初始化完成（音量：' + (hpLogoAudioVolume * 100) + '%）');
+            } catch (error) {
+                console.log('🚫 HP Logo 音效初始化失敗:', error);
+            }
+        }
+        
+        function playHpLogoAudio() {
+            if (hpLogoAudio) {
+                hpLogoAudio.currentTime = 0; // 重置播放位置
+                hpLogoAudio.volume = hpLogoAudioVolume; // 確保音量正確
+                hpLogoAudio.play().catch(e => {
+                    console.log('🚫 HP Logo 音效播放失敗:', e);
                 });
             }
         }
@@ -3980,6 +4005,9 @@
                             hpLogo.collected = true;
                             collectedCount++;
                             console.log(`💊 光球被收集: ${hpLogo.id}`);
+                            
+                            // 播放 HP Logo 收集音效
+                            playHpLogoAudio();
                             
                             // 通知 HeartManager 收集了光球
                             if (typeof heartManager !== 'undefined') {
