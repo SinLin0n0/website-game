@@ -207,6 +207,7 @@ function init() {
     loadBackgroundImage();
     loadCharacterSprites();
     loadRoadImages();
+    loadHpLogoImage();
     createWorld();
     setupEventListeners();
     updateUI();
@@ -262,6 +263,18 @@ function createWorld() {
     const road2X = Math.floor(GAME_WIDTH * road2LeftDistanceRatio); // 使用背景寬度計算左邊距
     const road2Y = GAME_HEIGHT - Math.floor(GAME_HEIGHT * road2BottomDistanceRatio) - road2Height; // 底部對齊背景底部
     
+    // 計算house-1元件尺寸，假設寬高比為4:3（可根據實際圖片調整）
+    const house1AspectRatio = 4 / 3; // 寬高比，房子寬度通常比高度大
+    const house1HeightRatio = 221 / 512; // 221像素高度在512背景中的比例 (43.16%)
+    const house1Height = Math.floor(GAME_HEIGHT * house1HeightRatio);
+    const house1Width = Math.floor(house1Height * house1AspectRatio); // 等比縮放
+    
+    // 設定house-1位置：底部對齊road-2的頂部，右邊與road-2右邊距離為33
+    const house1RightDistanceRatio = 33 / 512; // 33像素距離在512背景中的比例 (6.45%)
+    const house1RightDistance = Math.floor(GAME_HEIGHT * house1RightDistanceRatio); // 使用背景高度計算距離
+    const house1X = road2X + road2Width - house1Width - house1RightDistance; // 右邊距離road-2右邊33像素
+    const house1Y = road2Y - house1Height; // 底部對齊road-2頂部
+    
     // 創建road元件
     world.roads = [
         {
@@ -284,12 +297,54 @@ function createWorld() {
             width: road2Width,
             height: road2Height,
             type: 'road-2'
+        },
+        {
+            x: house1X,
+            y: house1Y,
+            width: house1Width,
+            height: house1Height,
+            type: 'house-1'
         }
     ];
     
     // 設置玩家初始位置在road-1元件上方
     player.x = roadX + 50; // 在road-1左側一點
     player.y = roadY - player.height; // 站在road-1上方
+    
+    // 創建HP Logo - 4個hp-logo，動態尺寸調整
+    const hpLogoHeightRatio = 41 / 512; // 41像素高度在512背景中的比例 (8.01%)
+    const hpLogoHeight = Math.floor(GAME_HEIGHT * hpLogoHeightRatio);
+    // 假設hp-logo是正方形，如果有特定比例可以調整
+    const hpLogoWidth = hpLogoHeight; // 等比縮放，保持正方形
+    
+    // 第一個hp-logo位置計算
+    const hpLogoLeftDistanceRatio = 15 / 512; // 15像素距離在512背景中的比例 (2.93%)
+    const hpLogoBottomDistanceRatio = 121 / 512; // 121像素距離在512背景中的比例 (23.63%)
+    const hpLogoLeftDistance = Math.floor(GAME_HEIGHT * hpLogoLeftDistanceRatio);
+    const hpLogoBottomDistance = Math.floor(GAME_HEIGHT * hpLogoBottomDistanceRatio);
+    
+    // 找到road-2的信息
+    const road2 = world.roads.find(road => road.type === 'road-2');
+    const firstHpLogoX = road2.x + hpLogoLeftDistance; // hp-logo左邊與road-2的左邊距離
+    const firstHpLogoY = road2.y - hpLogoBottomDistance - hpLogoHeight; // hp-logo底部與road-2的頂部距離
+    
+    // 創建4個hp-logo，水平排列
+    const hpLogoSpacingRatio = 8 / 512; // 8像素間距在512背景中的比例 (1.56%)
+    const hpLogoSpacing = Math.floor(GAME_HEIGHT * hpLogoSpacingRatio);
+    
+    hpLogos = [];
+    for (let i = 0; i < 4; i++) {
+        hpLogos.push({
+            x: firstHpLogoX + i * (hpLogoWidth + hpLogoSpacing),
+            y: firstHpLogoY,
+            width: hpLogoWidth,
+            height: hpLogoHeight,
+            collected: false, // 是否已被收集
+            id: i
+        });
+    }
+    
+    console.log('🩹 HP Logo創建完成，共4個:', hpLogos);
     
     // 已刪除終點設定（lab 藍色框框）
     world.endpoint = null;
@@ -403,6 +458,9 @@ function restartGame() {
     
     // 重置庫存
     inventory = { healthPotions: 2, shields: 1 };
+    
+    // 重置HP Logo收集計數
+    collectedHpCount = 0;
     
     // 清除所有按鍵狀態
     keys = {};
@@ -520,10 +578,12 @@ function updateCamera() {
 
 function checkCollisions() {
     player.onGround = false;
+    
+    // 檢查與路面的碰撞
     world.roads.forEach(road => {
-        // road-kanban 作為背景，不參與碰撞檢測
-        if (road.type === 'road-kanban') {
-            return; // 跳過 road-kanban 的碰撞檢測
+        // road-kanban 和 house-1 作為背景，不參與碰撞檢測
+        if (road.type === 'road-kanban' || road.type === 'house-1') {
+            return; // 跳過背景元素的碰撞檢測
         }
         
         if (player.x < road.x + road.width &&
@@ -536,6 +596,25 @@ function checkCollisions() {
                 player.velocityY = 0;
                 player.onGround = true;
             }
+        }
+    });
+    
+    // 檢查與HP Logo的碰撞
+    hpLogos.forEach(hpLogo => {
+        if (hpLogo.collected) return; // 已被收集的不檢查碰撞
+        
+        if (player.x < hpLogo.x + hpLogo.width &&
+            player.x + player.width > hpLogo.x &&
+            player.y < hpLogo.y + hpLogo.height &&
+            player.y + player.height > hpLogo.y) {
+            
+            // 收集HP Logo
+            hpLogo.collected = true;
+            collectedHpCount++;
+            console.log(`🩹 收集到HP Logo ${hpLogo.id + 1}！總共收集：${collectedHpCount}/4`);
+            
+            // 更新UI顯示
+            updateUI();
         }
     });
 }
@@ -581,6 +660,7 @@ function updateUI() {
     document.getElementById('healthText').textContent = `HP: ${player.health}/${player.maxHealth}`;
     document.getElementById('healthCount').textContent = inventory.healthPotions;
     document.getElementById('shieldCount').textContent = inventory.shields;
+    document.getElementById('hpCount').textContent = `${collectedHpCount}/4`;
 }
 
 // ===============================
@@ -593,6 +673,7 @@ function render() {
     
     drawBackground();
     drawRoads();
+    drawHpLogos();
     // drawEndpoint(); // 已刪除 lab 藍色框框
     drawPlayer();
 }
@@ -635,8 +716,14 @@ function drawBackground() {
 let roadImages = {};
 let roadsLoaded = false;
 
+// HP Logo 系統
+let hpLogos = [];
+let hpLogoImage = null;
+let hpLogoLoaded = false;
+let collectedHpCount = 0; // 收集到的hp數量
+
 function loadRoadImages() {
-    const roadTypes = ['road-1', 'road-kanban', 'road-2'];
+    const roadTypes = ['road-1', 'road-kanban', 'road-2', 'house-1'];
     let loadedCount = 0;
     
     roadTypes.forEach(type => {
@@ -660,6 +747,20 @@ function loadRoadImages() {
         };
         img.src = `${type}.svg`;
     });
+}
+
+// 載入HP Logo圖片
+function loadHpLogoImage() {
+    hpLogoImage = new Image();
+    hpLogoImage.onload = function() {
+        hpLogoLoaded = true;
+        console.log('✅ HP Logo圖片載入完成: hp-logo.svg');
+    };
+    hpLogoImage.onerror = function() {
+        console.log('❌ HP Logo圖片載入失敗: hp-logo.svg');
+        hpLogoLoaded = false;
+    };
+    hpLogoImage.src = 'hp-logo.svg';
 }
 
 function drawRoads() {
@@ -689,6 +790,46 @@ function drawRoads() {
                 ctx.fillStyle = '#ffffff';
                 ctx.font = '16px "Press Start 2P"';
                 ctx.fillText(road.type, x + 10, y + 30);
+            }
+        }
+    });
+}
+
+function drawHpLogos() {
+    hpLogos.forEach(hpLogo => {
+        // 如果hp-logo已被收集，不繪製
+        if (hpLogo.collected) return;
+        
+        // 使用Math.floor確保整數像素位置，避免閃爍
+        const x = Math.floor(hpLogo.x - camera.x);
+        const y = Math.floor(hpLogo.y - camera.y);
+        
+        // 檢查是否在畫面內
+        if (x + hpLogo.width >= 0 && x <= GAME_WIDTH &&
+            y + hpLogo.height >= 0 && y <= GAME_HEIGHT) {
+            
+            // 嘗試繪製HP Logo圖片
+            if (hpLogoLoaded && hpLogoImage) {
+                ctx.save();
+                ctx.imageSmoothingEnabled = false;
+                ctx.drawImage(hpLogoImage, x, y, hpLogo.width, hpLogo.height);
+                ctx.restore();
+            } else {
+                // 如果圖片未載入，繪製預設的紅色十字
+                ctx.fillStyle = '#ff0000';
+                ctx.fillRect(x, y, hpLogo.width, hpLogo.height);
+                
+                // 繪製白色十字
+                ctx.fillStyle = '#ffffff';
+                const crossSize = Math.floor(hpLogo.width * 0.6);
+                const crossThickness = Math.floor(hpLogo.width * 0.15);
+                const centerX = x + hpLogo.width / 2;
+                const centerY = y + hpLogo.height / 2;
+                
+                // 水平線
+                ctx.fillRect(centerX - crossSize/2, centerY - crossThickness/2, crossSize, crossThickness);
+                // 垂直線
+                ctx.fillRect(centerX - crossThickness/2, centerY - crossSize/2, crossThickness, crossSize);
             }
         }
     });
