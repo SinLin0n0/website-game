@@ -331,6 +331,8 @@
         let gameState = 'story';
         let currentStoryPage = 1;
         let maxStoryPages = 3;
+        let victoryStartTime = null;
+        let victoryDuration = 2000;
         let gameLoopId = null;
         
         // 背景圖片變數
@@ -378,7 +380,8 @@
             health: 100, maxHealth: 100,
             shieldActive: false, shieldHits: 0,
             facingRight: true,
-            alpha: 1
+            alpha: 1,
+            controlDisabled: false
         };
         
         let camera = { x: 0, y: 0 };
@@ -1779,7 +1782,7 @@
                 type: 'laboratory-1',
                 isTransformed: false,
                 transformStartTime: null,
-                transformDuration: 100 // 0.1秒轉換時間
+                transformDuration: 200 // 0.2秒轉換時間
             });
 
             console.log('🏥 Laboratory-1創建完成:', { x: laboratory1X, y: laboratory1Y, width: laboratory1Width, height: laboratory1Height });
@@ -1891,6 +1894,12 @@
         
         function updatePlayer() {
             const wasMoving = Math.abs(player.velocityX) > 0.1;
+            
+            // 如果主角控制被禁用，停止移動
+            if (player.controlDisabled) {
+                player.velocityX *= 0.9; // 逐漸停止
+                return;
+            }
             
             if (keys['ArrowLeft']) {
                 player.velocityX = -3;
@@ -2085,22 +2094,24 @@
             
             world.roads.forEach(road => {
                 if (road.type === 'laboratory-1' && !road.isTransformed) {
-                    // 檢查主角是否走到laboratory-1的寬度2/5位置
-                    const triggerX = road.x + (road.width * 0.4); // 2/5 = 0.4
+                    // 檢查主角是否走到laboratory-1的寬度1/5位置
+                    const triggerX = road.x + (road.width * 0.2); // 1/5 = 0.2
                     
                     if (player.x >= triggerX) {
                         road.isTransformed = true;
                         road.transformStartTime = currentTime;
                         road.type = 'laboratory-2';
-                        console.log('🏥 Laboratory-1轉換為Laboratory-2！');
+                        player.controlDisabled = true; // 禁用主角控制
+                        console.log('🏥 Laboratory-1轉換為Laboratory-2！主角控制已禁用');
                     }
                 } else if (road.type === 'laboratory-2' && road.isTransformed) {
                     const transformProgress = (currentTime - road.transformStartTime) / road.transformDuration;
                     
                     if (transformProgress >= 1) {
-                        // 轉換完成，遊戲結束
+                        // 轉換完成，開始畫面變黑
                         console.log('🎉 遊戲勝利！主角成功進入實驗室！');
-                        endGame(true);
+                        gameState = 'victory';
+                        startVictorySequence();
                     } else {
                         // 正在轉換，主角透明度逐漸降低
                         const alpha = 1 - transformProgress;
@@ -2108,6 +2119,13 @@
                     }
                 }
             });
+        }
+
+        function startVictorySequence() {
+            // 開始勝利序列
+            victoryStartTime = Date.now();
+            victoryDuration = 2000; // 2秒變黑時間
+            console.log('🎬 開始勝利序列：畫面變黑');
         }
 
         function checkEndpoint() {
@@ -2198,13 +2216,17 @@
                 health: 100, maxHealth: 100,
                 shieldActive: false, shieldHits: 0,
                 facingRight: true,
-                alpha: 1
+                alpha: 1,
+                controlDisabled: false
             };
             
             // 重置動畫狀態
             currentAnimation = 'idle';
             animationFrame = 0;
             lastFrameTime = Date.now();
+            
+            // 重置勝利序列
+            victoryStartTime = null;
             
             // 重置跳躍狀態
             jumpState = 'none';
@@ -2259,6 +2281,23 @@
             springManager.draw(ctx, camera, GAME_WIDTH, GAME_HEIGHT);
             // drawEndpoint(); // 已刪除 lab 藍色框框
             drawPlayer();
+            
+            // 如果處於勝利狀態，繪製變黑效果
+            if (gameState === 'victory' && victoryStartTime) {
+                const currentTime = Date.now();
+                const elapsed = currentTime - victoryStartTime;
+                const progress = Math.min(elapsed / victoryDuration, 1);
+                
+                // 繪製漸變黑色遮罩
+                ctx.fillStyle = `rgba(0, 0, 0, ${progress})`;
+                ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+                
+                // 如果變黑完成，可以準備顯示勝利動畫
+                if (progress >= 1) {
+                    console.log('🎬 畫面變黑完成，準備顯示勝利動畫');
+                    // 這裡可以加入勝利動畫的邏輯
+                }
+            }
         }
         
         function drawBackground() {
