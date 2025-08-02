@@ -2281,8 +2281,8 @@
             
             // 如果動畫狀態改變，重置動畫幀索引和時間
             if (newAnimation !== currentAnimation) {
-                // 檢查是否從 jumpPrepare 切換到 jumping（顯示 jump-2 時播放音效）
-                if (currentAnimation === 'jumpPrepare' && newAnimation === 'jumping') {
+                // 檢查是否切換到 jumpPrepare（顯示 jump-1 時播放音效）
+                if (newAnimation === 'jumpPrepare') {
                     playJumpAudio();
                 }
                 
