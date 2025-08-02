@@ -58,7 +58,7 @@
         }
         
         .intro-content {
-            background: url('story-bg.svg') no-repeat center center;
+            background: url('assets/story-bg.svg') no-repeat center center;
             background-size: cover;
             border: none;
             border-radius: 0;
@@ -445,7 +445,7 @@
                 backgroundLoaded = false;
             };
             // 使用相對路徑 - 請將您的背景圖片命名為 background.jpg 並放在與此HTML文件相同的目錄中
-            backgroundImage.src = 'background.jpg';
+            backgroundImage.src = 'assets/background.jpg';
         }
         
         // 載入角色動畫 - 確保正確順序載入
@@ -456,16 +456,16 @@
             
             // 站立動畫圖片路徑（SVG格式）
             const idleFramePaths = [
-                'character-idle-1.svg',
-                'character-idle-2.svg'
+                        'assets/character-idle-1.svg',
+        'assets/character-idle-2.svg'
             ];
             
             // 跑步動畫圖片路徑（SVG格式） - 按照正確順序
             const runningFramePaths = [
-                'character-run-1.svg',  // 索引0
-                'character-run-2.svg',  // 索引1
-                'character-run-3.svg',  // 索引2
-                'character-run-4.svg'   // 索引3
+                        'assets/character-run-1.svg',  // 索引0
+        'assets/character-run-2.svg',  // 索引1
+        'assets/character-run-3.svg',  // 索引2
+        'assets/character-run-4.svg'   // 索引3
             ];
             
             let loadedCount = 0;
@@ -558,7 +558,7 @@
                 console.log('❌ 準備跳躍圖片載入失敗: jump-1.svg');
                 loadedCount++;
             };
-            jumpPrepareImg.src = 'jump-1.svg';
+            jumpPrepareImg.src = 'assets/jump-1.svg';
             
             // 載入跳躍圖片 (jump-2)
             const jumpImg = new Image();
@@ -574,7 +574,7 @@
                 console.log('❌ 跳躍圖片載入失敗: jump-2.svg');
                 loadedCount++;
             };
-            jumpImg.src = 'jump-2.svg';
+            jumpImg.src = 'assets/jump-2.svg';
         }
         
         // 移除上傳功能 - 直接使用指定的圖片文件
@@ -1932,7 +1932,7 @@
             
             if (gameOverImage && retryBtnContainer && retryBtnImage) {
                 // 預先載入 retry-btn 圖片
-                retryBtnImage.src = 'retry-btn.svg';
+                retryBtnImage.src = 'assets/retry-btn.svg';
                 
                 // 追蹤點擊次數的變數
                 let isProcessingClick = false; // 防止快速連續點擊
@@ -2018,7 +2018,7 @@
                 gameOverImage.onload = adjustFailureImageSize;
                 
                 // 設定 game over 圖片來源以觸發 onload
-                gameOverImage.src = 'game over.svg';
+                gameOverImage.src = 'assets/game over.svg';
             }
         }
         
@@ -2062,7 +2062,7 @@
             
             if (story1Image && nextBtnContainer && nextBtnImage) {
                 // 預先載入 next-btn 圖片
-                nextBtnImage.src = 'next-btn.svg';
+                nextBtnImage.src = 'assets/next-btn.svg';
                 
                 // 追蹤點擊次數的變數
                 let clickCount = 0;
@@ -2158,7 +2158,7 @@
                         isProcessingClick = true;
                         
                         // 檢查當前按鈕類型
-                        const isStartBtn = nextBtnImage.src.includes('start-btn.svg');
+                        const isStartBtn = nextBtnImage.src.includes('assets/start-btn.svg');
                         console.log(`🖱️ Button clicked! 當前按鈕類型: ${isStartBtn ? 'start-btn' : 'next-btn'}, 處理中...`);
                         
                         if (isStartBtn) {
@@ -2174,7 +2174,7 @@
                             if (clickCount === 1) {
                                 // 第一次點擊：切換到 story-2
                                 story1Image.onload = adjustImageSize;
-                                story1Image.src = 'story-2.svg';
+                                story1Image.src = 'assets/story-2.svg';
                                 console.log('📄 切換到 story-2');
                                 
                                 // 延遲解鎖點擊
@@ -2186,12 +2186,12 @@
                             } else if (clickCount === 2) {
                                 // 第二次點擊：切換到 story-3 並改變按鈕圖片
                                 story1Image.onload = adjustImageSize;
-                                story1Image.src = 'story-3.svg';
+                                story1Image.src = 'assets/story-3.svg';
                                 
                                 // 延遲切換按鈕圖片，避免立即觸發事件
                                 setTimeout(() => {
                                     console.log('🔄 準備切換按鈕為 start-btn');
-                                    nextBtnImage.src = 'start-btn.svg';
+                                    nextBtnImage.src = 'assets/start-btn.svg';
                                     console.log('✅ 按鈕已切換為 start-btn');
                                     
                                     // 延遲解鎖點擊
@@ -2222,7 +2222,7 @@
                 story1Image.onload = adjustImageSize;
                 
                 // 設定 story-1 圖片來源以觸發 onload
-                story1Image.src = 'story-1.svg';
+                story1Image.src = 'assets/story-1.svg';
             }
         }
         
@@ -2286,7 +2286,7 @@
         // 按鈕音效管理函數
         function initButtonAudio() {
             try {
-                buttonAudio = new Audio('sound/button.mp3');
+                buttonAudio = new Audio('assets/sound/button.mp3');
                 buttonAudio.volume = buttonAudioVolume;
                 console.log('🔊 按鈕音效初始化完成（音量：' + (buttonAudioVolume * 100) + '%）');
             } catch (error) {
@@ -2306,7 +2306,7 @@
         
         function initJumpAudio() {
             try {
-                jumpAudio = new Audio('sound/jump.mp3');
+                jumpAudio = new Audio('assets/sound/jump.mp3');
                 jumpAudio.volume = jumpAudioVolume;
                 console.log('🔊 跳躍音效初始化完成（音量：' + (jumpAudioVolume * 100) + '%）');
             } catch (error) {
@@ -2326,7 +2326,7 @@
         
         function initHpLogoAudio() {
             try {
-                hpLogoAudio = new Audio('sound/gethp.mp3');
+                hpLogoAudio = new Audio('assets/sound/gethp.mp3');
                 hpLogoAudio.volume = hpLogoAudioVolume;
                 console.log('🔊 HP Logo 音效初始化完成（音量：' + (hpLogoAudioVolume * 100) + '%）');
             } catch (error) {
@@ -2346,7 +2346,7 @@
         
         function initRunningAudio() {
             try {
-                runningAudio = new Audio('sound/running.mp3');
+                runningAudio = new Audio('assets/sound/running.mp3');
                 runningAudio.volume = runningAudioVolume;
                 runningAudio.loop = true; // 跑步音效循環播放
                 console.log('🔊 跑步音效初始化完成（音量：' + (runningAudioVolume * 100) + '%）');
@@ -2379,7 +2379,7 @@
         
         function initEndAudio() {
             try {
-                endAudio = new Audio('sound/end.mp3');
+                endAudio = new Audio('assets/sound/end.mp3');
                 endAudio.volume = endAudioVolume;
                 console.log('🔊 結束音效初始化完成（音量：' + (endAudioVolume * 100) + '%）');
             } catch (error) {
@@ -2399,7 +2399,7 @@
         
         function initCloudAudio() {
             try {
-                cloudAudio = new Audio('sound/light.mp3');
+                cloudAudio = new Audio('assets/sound/light.mp3');
                 cloudAudio.volume = cloudAudioVolume;
                 console.log('🔊 Cloud 音效初始化完成（音量：' + (cloudAudioVolume * 100) + '%）');
             } catch (error) {
@@ -2451,7 +2451,7 @@
         // 音樂管理函數
         function initGameBGM() {
             try {
-                gameBGM = new Audio('sound/game-bgm.mp3');
+                gameBGM = new Audio('assets/sound/game-bgm.mp3');
                 gameBGM.volume = musicVolume; // 直接設定為完整音量
                 gameBGM.loop = true; // 無限循環
                 console.log('🎵 背景音樂初始化完成（音量：' + (musicVolume * 100) + '%）');
@@ -3226,7 +3226,7 @@
                             this.imagesLoaded = true;
                         }
                     };
-                    img.src = `${type}.svg`;
+                    img.src = `assets/${type}.svg`;
                 });
             }
 
@@ -3417,7 +3417,7 @@
                             this.imagesLoaded = true;
                         }
                     };
-                    img.src = `${type}.svg`;
+                    img.src = `assets/${type}.svg`;
                 });
             }
 
@@ -3606,7 +3606,7 @@
                             this.imagesLoaded = true;
                         }
                     };
-                    img.src = `${type}.svg`;
+                    img.src = `assets/${type}.svg`;
                 });
             }
 
@@ -3887,7 +3887,7 @@
                             this.imagesLoaded = true;
                         }
                     };
-                    img.src = `${type}.svg`;
+                    img.src = `assets/${type}.svg`;
                 });
             }
 
@@ -4163,7 +4163,7 @@
                             this.imagesLoaded = true;
                         }
                     };
-                    img.src = `${type}.svg`;
+                    img.src = `assets/${type}.svg`;
                 });
             }
 
@@ -4443,7 +4443,7 @@
                     console.log('❌ HP Logo圖片載入失敗: hp-logo.svg');
                     this.imageLoaded = false;
                 };
-                this.image.src = 'hp-logo.svg';
+                this.image.src = 'assets/hp-logo.svg';
             }
 
             // 創建HP Logo（水平排列）
@@ -4661,7 +4661,7 @@
                         }
                     }
                 };
-                img.src = `${type}.svg`;
+                img.src = `assets/${type}.svg`;
             });
         }
 
@@ -4920,7 +4920,7 @@
                             this.createHearts();
                         }
                     };
-                    img.src = `${type}.svg`;
+                    img.src = `assets/${type}.svg`;
                 });
             }
 

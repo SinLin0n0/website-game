@@ -80,7 +80,7 @@ function loadBackgroundImage() {
         backgroundLoaded = false;
     };
     // 使用相對路徑 - 請將您的背景圖片命名為 background.jpg 並放在與此HTML文件相同的目錄中
-    backgroundImage.src = 'background.jpg';
+    backgroundImage.src = 'assets/background.jpg';
 }
 
 // 載入角色動畫 - 確保正確順序載入
@@ -91,16 +91,16 @@ function loadCharacterSprites() {
     
     // 站立動畫圖片路徑（SVG格式）
     const idleFramePaths = [
-        'character-idle-1.svg',
-        'character-idle-2.svg'
+        'assets/character-idle-1.svg',
+        'assets/character-idle-2.svg'
     ];
     
     // 跑步動畫圖片路徑（SVG格式） - 按照正確順序
     const runningFramePaths = [
-        'character-run-1.svg',  // 索引0
-        'character-run-2.svg',  // 索引1
-        'character-run-3.svg',  // 索引2
-        'character-run-4.svg'   // 索引3
+        'assets/character-run-1.svg',  // 索引0
+        'assets/character-run-2.svg',  // 索引1
+        'assets/character-run-3.svg',  // 索引2
+        'assets/character-run-4.svg'   // 索引3
     ];
     
     let loadedCount = 0;
@@ -726,7 +726,7 @@ function loadRoadImages() {
                 roadsLoaded = true;
             }
         };
-        img.src = `${type}.svg`;
+        img.src = `assets/${type}.svg`;
     });
 }
 
@@ -741,7 +741,7 @@ function loadHpLogoImage() {
         console.log('❌ HP Logo圖片載入失敗: hp-logo.svg');
         hpLogoLoaded = false;
     };
-    hpLogoImage.src = 'hp-logo.svg';
+    hpLogoImage.src = 'assets/hp-logo.svg';
 }
 
 function drawRoads() {
