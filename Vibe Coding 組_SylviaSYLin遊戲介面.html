@@ -342,7 +342,9 @@
         // 角色動畫系統
         let characterSprites = {
             idle: [],
-            running: []
+            running: [],
+            jumpPrepare: null, // 準備跳躍圖片 (jump-1)
+            jumping: null // 跳躍圖片 (jump-2)
         };
         let currentAnimation = 'idle';
         let animationFrame = 0;
@@ -350,6 +352,11 @@
         let idleFrameInterval = 300; // 站立動畫：0.3秒換一張
         let runningFrameInterval = 70; // 跑步動畫：0.07秒換一張
         let spritesLoaded = false;
+        
+        // 跳躍狀態追蹤
+        let jumpState = 'none'; // 'none', 'preparing', 'jumping'
+        let jumpStartTime = 0;
+        let jumpPrepareTime = 0.1 * 1000; // 準備跳躍動畫持續時間：0.03秒（30毫秒）
         
         // 角色大小動態計算
         function calculatePlayerSize() {
@@ -491,6 +498,43 @@
             // 開始按順序載入
             loadIdleAnimation(0);
         }
+
+        // 載入跳躍動畫
+        function loadJumpSprite() {
+            let loadedCount = 0;
+            
+            // 載入準備跳躍圖片 (jump-1)
+            const jumpPrepareImg = new Image();
+            jumpPrepareImg.onload = function() {
+                characterSprites.jumpPrepare = jumpPrepareImg;
+                loadedCount++;
+                console.log('✅ 準備跳躍圖片載入完成: jump-1.svg');
+                if (loadedCount === 2) {
+                    console.log('🏃‍♂️ 所有跳躍圖片載入完成！');
+                }
+            };
+            jumpPrepareImg.onerror = function() {
+                console.log('❌ 準備跳躍圖片載入失敗: jump-1.svg');
+                loadedCount++;
+            };
+            jumpPrepareImg.src = 'jump-1.svg';
+            
+            // 載入跳躍圖片 (jump-2)
+            const jumpImg = new Image();
+            jumpImg.onload = function() {
+                characterSprites.jumping = jumpImg;
+                loadedCount++;
+                console.log('✅ 跳躍圖片載入完成: jump-2.svg');
+                if (loadedCount === 2) {
+                    console.log('🏃‍♂️ 所有跳躍圖片載入完成！');
+                }
+            };
+            jumpImg.onerror = function() {
+                console.log('❌ 跳躍圖片載入失敗: jump-2.svg');
+                loadedCount++;
+            };
+            jumpImg.src = 'jump-2.svg';
+        }
         
         // 移除上傳功能 - 直接使用指定的圖片文件
         
@@ -524,8 +568,10 @@
             
             loadBackgroundImage();
             loadCharacterSprites();
+            loadJumpSprite();
             loadRoadImages();
             loadHpLogoImage();
+            springManager.loadImages();
             createWorld();
             setupEventListeners();
             updateUI();
@@ -805,6 +851,24 @@
             
             console.log('🩹 HP Logo創建完成，共4個:', hpLogos);
             
+            // 清空所有舊的彈簧
+            springManager.clear();
+            
+            // 使用Spring模組創建彈簧
+            const springLeftDistanceRatio = 40 / 512;
+            const springLeftDistance = Math.floor(GAME_HEIGHT * springLeftDistanceRatio);
+            
+            const road3 = world.roads.find(road => road.type === 'road-3');
+            const house2 = world.roads.find(road => road.type === 'house-2');
+            const springX = house2.x + house2.width + springLeftDistance;
+            
+            // 先創建彈簧，讓它自動計算Y位置
+            const spring = springManager.createSpring(springX, 0, player.width);
+            spring.y = road3.y - spring.height; // 底部對齊road-3頂部
+            
+            // 同步到舊系統（向後兼容）
+            springs = springManager.springs;
+            
             // 已刪除終點設定（lab 藍色框框）
             world.endpoint = null;
         }
@@ -829,6 +893,11 @@
                 
                 // 重新創建世界以適應新尺寸
                 createWorld();
+                
+                // 重新計算Spring尺寸（窗口大小改變時）
+                if (springManager.springs.length > 0 && springManager.imagesLoaded) {
+                    springManager.updateAllDimensions();
+                }
                 
                 // 調整玩家位置
                 player.y = Math.floor(GAME_HEIGHT * 0.5);
@@ -862,6 +931,7 @@
             updatePlayer();
             updateCamera();
             checkCollisions();
+            springManager.checkTriggerCollisions(player);
             checkEndpoint();
         }
         
@@ -881,11 +951,30 @@
             if (keys['Space'] && player.onGround) {
                 player.velocityY = -8;
                 player.onGround = false;
+                // 開始跳躍狀態追蹤
+                jumpState = 'preparing';
+                jumpStartTime = Date.now();
             }
+            
+            // 更新跳躍狀態
+            updateJumpState();
             
             // 更新動畫狀態
             const isMoving = Math.abs(player.velocityX) > 0.1;
-            const newAnimation = (isMoving && player.onGround) ? 'running' : 'idle';
+            const isJumping = !player.onGround; // 角色不在地面上就是跳躍狀態
+            
+            let newAnimation;
+            if (isJumping) {
+                if (jumpState === 'preparing') {
+                    newAnimation = 'jumpPrepare';
+                } else {
+                    newAnimation = 'jumping';
+                }
+            } else if (isMoving) {
+                newAnimation = 'running';
+            } else {
+                newAnimation = 'idle';
+            }
             
             // 如果動畫狀態改變，重置動畫幀索引和時間
             if (newAnimation !== currentAnimation) {
@@ -905,9 +994,26 @@
             // 更新動畫幀
             updateAnimation();
         }
+
+        // 更新跳躍狀態
+        function updateJumpState() {
+            if (jumpState === 'preparing') {
+                const currentTime = Date.now();
+                if (currentTime - jumpStartTime > jumpPrepareTime) {
+                    jumpState = 'jumping';
+                }
+            } else if (jumpState === 'jumping' && player.onGround) {
+                jumpState = 'none';
+            }
+        }
         
         function updateAnimation() {
             const currentTime = Date.now();
+            
+            // 跳躍動畫不需要更新幀，使用單一圖片
+            if (currentAnimation === 'jumping' || currentAnimation === 'jumpPrepare') {
+                return;
+            }
             
             // 根據動畫類型選擇不同的間隔時間
             const currentInterval = currentAnimation === 'running' ? runningFrameInterval : idleFrameInterval;
@@ -994,7 +1100,12 @@
                     updateUI();
                 }
             });
+            
+            // 使用Spring模組檢查障礙物碰撞
+            springManager.checkObstacleCollisions(player);
         }
+
+
         
         function checkEndpoint() {
             // 已刪除終點檢測（lab 藍色框框）
@@ -1087,6 +1198,10 @@
             animationFrame = 0;
             lastFrameTime = Date.now();
             
+            // 重置跳躍狀態
+            jumpState = 'none';
+            jumpStartTime = 0;
+            
             // 重置攝影機
             camera = { x: 0, y: 0 };
             
@@ -1098,6 +1213,9 @@
             
             // 重置HP Logo收集計數
             collectedHpCount = 0;
+            
+            // Spring已在createWorld()中清空並重新創建，只需重置狀態
+            springManager.reset();
             
             // 清除所有按鍵狀態
             keys = {};
@@ -1120,6 +1238,7 @@
             drawBackground();
             drawRoads();
             drawHpLogos();
+            springManager.draw(ctx, camera, GAME_WIDTH, GAME_HEIGHT);
             // drawEndpoint(); // 已刪除 lab 藍色框框
             drawPlayer();
         }
@@ -1169,6 +1288,303 @@
         let hpLogoLoaded = false;
         let collectedHpCount = 0; // 收集到的hp數量
 
+        // Spring 彈簧系統
+        let springs = [];
+        let springImages = {}; // 存储spring-1到spring-4的图片
+        let springsLoaded = false;
+
+        // ===============================
+        // Spring 彈簧模組
+        // ===============================
+        class SpringManager {
+            constructor() {
+                this.springs = [];
+                this.images = {};
+                this.imagesLoaded = false;
+            }
+
+            // 載入Spring圖片
+            loadImages() {
+                const springTypes = ['spring-1', 'spring-2', 'spring-3', 'spring-4'];
+                let loadedCount = 0;
+                
+                springTypes.forEach(type => {
+                    const img = new Image();
+                    img.onload = () => {
+                        this.images[type] = img;
+                        loadedCount++;
+                        console.log(`✅ 彈簧圖片載入完成: ${type}.svg`);
+                        
+                        if (loadedCount === springTypes.length) {
+                            this.imagesLoaded = true;
+                            console.log('🏃‍♂️ 所有彈簧圖片載入完成！');
+                            // 圖片載入完成後重新計算Spring尺寸
+                            this.updateAllDimensions();
+                        }
+                    };
+                    img.onerror = () => {
+                        console.log(`❌ 彈簧圖片載入失敗: ${type}.svg`);
+                        loadedCount++;
+                        if (loadedCount === springTypes.length) {
+                            this.imagesLoaded = true;
+                        }
+                    };
+                    img.src = `${type}.svg`;
+                });
+            }
+
+            // 創建Spring彈簧
+            createSpring(x, y, playerWidth) {
+                const springWidthRatio = 42 / 109; // 42像素寬度相對於109角色寬度的比例
+                const springWidth = Math.floor(playerWidth * springWidthRatio);
+                
+                let springHeight;
+                if (this.images['spring-1'] && this.images['spring-1'].complete) {
+                    const originalRatio = this.images['spring-1'].naturalHeight / this.images['spring-1'].naturalWidth;
+                    springHeight = Math.floor(springWidth * originalRatio);
+                } else {
+                    const defaultRatio = 1.2;
+                    springHeight = Math.floor(springWidth * defaultRatio);
+                }
+
+                const spring = {
+                    x: x,
+                    y: y,
+                    width: springWidth,
+                    height: springHeight,
+                    state: 'idle', // 'idle', 'standby', 'compressing', 'compressed', 'expanding'
+                    currentFrame: 1,
+                    animationTime: 0,
+                    isPlayerOn: false,
+                    playerStandTime: 0,
+                    standbyDuration: 0.3 * 1000,
+                    compressionDuration: 0.01 * 1000,
+                    holdDuration: 0.03 * 1000,
+                    expansionDuration: 0.01 * 1000
+                };
+
+                this.springs.push(spring);
+                console.log('🏃‍♂️ Spring彈簧創建完成:', spring);
+                return spring;
+            }
+
+            // 更新所有Spring尺寸
+            updateAllDimensions() {
+                this.springs.forEach(spring => {
+                    this.updateSpringDimensions(spring, player.width);
+                });
+            }
+
+            // 更新單個Spring尺寸
+            updateSpringDimensions(spring, playerWidth) {
+                if (!this.images['spring-1'] || !this.images['spring-1'].complete) return;
+                
+                const springWidthRatio = 42 / 109;
+                const springWidth = Math.floor(playerWidth * springWidthRatio);
+                const originalRatio = this.images['spring-1'].naturalHeight / this.images['spring-1'].naturalWidth;
+                const springHeight = Math.floor(springWidth * originalRatio);
+                
+                const oldHeight = spring.height;
+                spring.width = springWidth;
+                spring.height = springHeight;
+                spring.y += (oldHeight - springHeight); // 保持底部對齊
+            }
+
+            // 檢查障礙物碰撞
+            checkObstacleCollisions(player) {
+                this.springs.forEach(spring => {
+                    if (player.x < spring.x + spring.width &&
+                        player.x + player.width > spring.x &&
+                        player.y < spring.y + spring.height &&
+                        player.y + player.height > spring.y) {
+                        
+                        // 優先處理垂直碰撞（可以站在spring上面）
+                        if (player.velocityY > 0 && player.y < spring.y) {
+                            player.y = spring.y - player.height;
+                            player.velocityY = 0;
+                            player.onGround = true;
+                            return;
+                        }
+                        
+                        // 水平碰撞處理（左右阻擋）
+                        if (player.y + player.height > spring.y + 5) {
+                            if (player.velocityX > 0) {
+                                player.x = spring.x - player.width;
+                            } else if (player.velocityX < 0) {
+                                player.x = spring.x + spring.width;
+                            }
+                            player.velocityX = 0;
+                        }
+                    }
+                });
+            }
+
+            // 檢查觸發碰撞
+            checkTriggerCollisions(player) {
+                this.springs.forEach(spring => {
+                    const playerOnSpringTop = player.x < spring.x + spring.width &&
+                                            player.x + player.width > spring.x &&
+                                            player.y + player.height >= spring.y &&
+                                            player.y + player.height <= spring.y + 10 &&
+                                            player.onGround;
+                    
+                    if (playerOnSpringTop && spring.state === 'idle') {
+                        if (!spring.isPlayerOn) {
+                            spring.isPlayerOn = true;
+                            spring.playerStandTime = Date.now();
+                            spring.state = 'standby';
+                            console.log('🏃‍♂️ 玩家站到彈簧上，進入待機狀態');
+                            
+                            // 切換到jump-1動畫
+                            jumpState = 'preparing';
+                            jumpStartTime = Date.now();
+                        }
+                    } else if (!playerOnSpringTop && spring.isPlayerOn) {
+                        spring.isPlayerOn = false;
+                        spring.playerStandTime = 0;
+                        if (spring.state === 'standby') {
+                            spring.state = 'idle';
+                            spring.currentFrame = 1;
+                            spring.animationTime = 0;
+                            console.log('🏃‍♂️ 玩家離開彈簧，重置狀態');
+                        }
+                    }
+                });
+            }
+
+            // 更新Spring動畫
+            update(player) {
+                const currentTime = Date.now();
+                
+                this.springs.forEach(spring => {
+                    if (spring.state === 'idle') {
+                        spring.currentFrame = 1;
+                        return;
+                    }
+                    
+                    const deltaTime = currentTime - spring.animationTime;
+                    
+                    switch (spring.state) {
+                        case 'standby':
+                            if (spring.isPlayerOn && deltaTime >= spring.standbyDuration) {
+                                spring.state = 'compressing';
+                                spring.currentFrame = 1;
+                                spring.animationTime = currentTime;
+                                console.log('🏃‍♂️ 彈簧待機時間結束，開始壓縮動畫');
+                            }
+                            break;
+                            
+                        case 'compressing':
+                            if (deltaTime >= spring.compressionDuration) {
+                                spring.currentFrame++;
+                                spring.animationTime = currentTime;
+                                
+                                if (spring.currentFrame > 4) {
+                                    spring.state = 'compressed';
+                                    spring.currentFrame = 4;
+                                    spring.animationTime = currentTime;
+                                    console.log('🏃‍♂️ 彈簧壓縮完成，開始停頓');
+                                }
+                            }
+                            break;
+                            
+                        case 'compressed':
+                            if (deltaTime >= spring.holdDuration) {
+                                spring.state = 'expanding';
+                                spring.currentFrame = 3;
+                                spring.animationTime = currentTime;
+                                
+                                if (spring.isPlayerOn) {
+                                    player.velocityY = -12;
+                                    player.onGround = false;
+                                    jumpState = 'jumping';
+                                    jumpStartTime = Date.now();
+                                    console.log('🏃‍♂️ 彈簧彈開！玩家被彈起，切換到jump-2');
+                                }
+                            }
+                            break;
+                            
+                        case 'expanding':
+                            if (deltaTime >= spring.expansionDuration) {
+                                spring.currentFrame--;
+                                spring.animationTime = currentTime;
+                                
+                                if (spring.currentFrame < 1) {
+                                    spring.state = 'idle';
+                                    spring.currentFrame = 1;
+                                    spring.animationTime = 0;
+                                    console.log('🏃‍♂️ 彈簧回復到閒置狀態');
+                                }
+                            }
+                            break;
+                    }
+                });
+            }
+
+            // 繪製Spring
+            draw(ctx, camera, GAME_WIDTH, GAME_HEIGHT) {
+                this.springs.forEach(spring => {
+                    const x = Math.floor(spring.x - camera.x);
+                    const y = Math.floor(spring.y - camera.y);
+                    
+                    if (x + spring.width >= 0 && x <= GAME_WIDTH &&
+                        y + spring.height >= 0 && y <= GAME_HEIGHT) {
+                        
+                        const frameName = `spring-${spring.currentFrame}`;
+                        
+                        if (this.imagesLoaded && this.images[frameName]) {
+                            ctx.save();
+                            ctx.imageSmoothingEnabled = false;
+                            ctx.drawImage(this.images[frameName], x, y, spring.width, spring.height);
+                            ctx.restore();
+                        } else {
+                            // 預設彈簧樣式
+                            ctx.fillStyle = '#4CAF50';
+                            ctx.fillRect(x, y, spring.width, spring.height);
+                            
+                            ctx.strokeStyle = '#2E7D32';
+                            ctx.lineWidth = 2;
+                            
+                            const compressionRatio = spring.currentFrame / 4;
+                            const compressedHeight = Math.floor(spring.height * compressionRatio);
+                            const offsetY = spring.height - compressedHeight;
+                            
+                            for (let i = 0; i < 3; i++) {
+                                const lineY = y + offsetY + (compressedHeight / 4) * (i + 1);
+                                ctx.beginPath();
+                                ctx.moveTo(x, lineY);
+                                ctx.lineTo(x + spring.width, lineY);
+                                ctx.stroke();
+                            }
+                            
+                            ctx.fillStyle = '#ffffff';
+                            ctx.font = '8px "Press Start 2P"';
+                            ctx.fillText(`S${spring.currentFrame}`, x + 2, y + 10);
+                        }
+                    }
+                });
+            }
+
+            // 重置所有Spring狀態
+            reset() {
+                this.springs.forEach(spring => {
+                    spring.state = 'idle';
+                    spring.currentFrame = 1;
+                    spring.animationTime = 0;
+                    spring.isPlayerOn = false;
+                    spring.playerStandTime = 0;
+                });
+            }
+
+            // 清空所有Spring
+            clear() {
+                this.springs = [];
+            }
+        }
+
+        // 創建全域Spring管理器
+        const springManager = new SpringManager();
+
         // 載入HP Logo圖片
         function loadHpLogoImage() {
             hpLogoImage = new Image();
@@ -1182,6 +1598,8 @@
             };
             hpLogoImage.src = 'hp-logo.svg';
         }
+
+
 
         function loadRoadImages() {
             const roadTypes = ['road-1', 'road-kanban', 'road-2', 'road-3', 'house-1', 'house-2'];
@@ -1298,6 +1716,8 @@
                 }
             });
         }
+
+
         
         function drawEndpoint() {
             // 已刪除 lab 藍色框框
@@ -1311,30 +1731,49 @@
             const x = Math.floor(player.x - camera.x);
             const y = Math.floor(player.y - camera.y);
             
-            // 檢查是否有有效的動畫幀
-            const animFrames = characterSprites[currentAnimation];
+            let hasValidSprite = false;
+            let sprite = null;
             
-            // 確保動畫幀索引在有效範圍內
-            if (animFrames && animFrames.length > 0 && animationFrame >= animFrames.length) {
-                console.log(`⚠️ 動畫幀索引超出範圍: ${animationFrame} >= ${animFrames.length}，重置為0`);
-                animationFrame = 0;
-            }
-            
-            const hasValidSprite = animFrames && 
-                                  animFrames.length > 0 && 
-                                  animationFrame < animFrames.length &&
-                                  animFrames[animationFrame] && 
-                                  animFrames[animationFrame].complete;
-            
-            // 調試信息（僅在需要時顯示）
-            if (currentAnimation === 'running' && !hasValidSprite) {
-                console.log(`❌ 跑步動畫幀無效: 索引${animationFrame}, 動畫數組長度${animFrames?.length}`);
-            }
-            
-            if (hasValidSprite) {
-                // 繪製自定義角色動畫
-                const sprite = animFrames[animationFrame];
+            if (currentAnimation === 'jumping') {
+                // 使用跳躍圖片 (jump-2)
+                if (characterSprites.jumping && characterSprites.jumping.complete) {
+                    hasValidSprite = true;
+                    sprite = characterSprites.jumping;
+                }
+            } else if (currentAnimation === 'jumpPrepare') {
+                // 使用準備跳躍圖片 (jump-1)
+                if (characterSprites.jumpPrepare && characterSprites.jumpPrepare.complete) {
+                    hasValidSprite = true;
+                    sprite = characterSprites.jumpPrepare;
+                }
+            } else {
+                // 檢查是否有有效的動畫幀
+                const animFrames = characterSprites[currentAnimation];
                 
+                // 確保動畫幀索引在有效範圍內
+                if (animFrames && animFrames.length > 0 && animationFrame >= animFrames.length) {
+                    console.log(`⚠️ 動畫幀索引超出範圍: ${animationFrame} >= ${animFrames.length}，重置為0`);
+                    animationFrame = 0;
+                }
+                
+                hasValidSprite = animFrames && 
+                              animFrames.length > 0 && 
+                              animationFrame < animFrames.length &&
+                              animFrames[animationFrame] && 
+                              animFrames[animationFrame].complete;
+                
+                if (hasValidSprite) {
+                    sprite = animFrames[animationFrame];
+                }
+                
+                // 調試信息（僅在需要時顯示）
+                if (currentAnimation === 'running' && !hasValidSprite) {
+                    console.log(`❌ 跑步動畫幀無效: 索引${animationFrame}, 動畫數組長度${animFrames?.length}`);
+                }
+            }
+            
+            if (hasValidSprite && sprite) {
+                // 繪製自定義角色動畫
                 ctx.save();
                 
                 // 設置高品質渲染
@@ -1383,6 +1822,7 @@
         
         function gameLoop() {
             update();
+            springManager.update(player);
             render();
             if (gameState === 'playing') {
                 gameLoopId = requestAnimationFrame(gameLoop);
