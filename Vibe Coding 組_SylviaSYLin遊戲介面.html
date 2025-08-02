@@ -399,7 +399,7 @@
         
         // 角色大小動態計算
         function calculatePlayerSize() {
-            const playerHeightRatio = 109 / 512; // 109像素高度在512背景中的比例 (21.29%)
+            const playerHeightRatio = 75 / 512; // 調整為75像素高度在512背景中的比例 (14.65%) - 提高遊戲挑戰性
             const dynamicHeight = Math.floor(GAME_HEIGHT * playerHeightRatio);
             // 假設角色寬高比為1:1，保持方形比例，如果有特定比例可以調整
             const dynamicWidth = dynamicHeight; // 保持方形，或可根據實際圖片比例調整
