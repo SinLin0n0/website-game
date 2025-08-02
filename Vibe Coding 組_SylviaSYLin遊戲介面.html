@@ -377,7 +377,8 @@
             velocityX: 0, velocityY: 0, onGround: false,
             health: 100, maxHealth: 100,
             shieldActive: false, shieldHits: 0,
-            facingRight: true
+            facingRight: true,
+            alpha: 1
         };
         
         let camera = { x: 0, y: 0 };
@@ -1716,6 +1717,72 @@
             });
 
             console.log('🏗️ Road-9創建完成:', { x: road9X, y: road9Y, width: road9Width, height: road9Height });
+
+            // 創建一組水平排列的HP Logo（3個）
+            const road9HpLogoSpacingRatio = 8 / 512; // 8像素間距在512背景中的比例 (1.56%)
+            const road9HpLogoLeftDistanceRatio = 110 / 512; // 110像素距離在512背景中的比例 (21.48%)
+            
+            const road9HpLogoSpacing = Math.floor(GAME_HEIGHT * road9HpLogoSpacingRatio);
+            const road9HpLogoLeftDistance = Math.floor(GAME_HEIGHT * road9HpLogoLeftDistanceRatio);
+            
+            // 計算HP Logo的位置
+            const road9HpLogoX = bridge2X + bridge2Width + road9HpLogoLeftDistance; // HP Logo左邊與bridge-2右邊距離110像素
+            const road9HpLogoHeightRatio = 41 / 512; // 41像素高度在512背景中的比例
+            const road9HpLogoHeight = Math.floor(GAME_HEIGHT * road9HpLogoHeightRatio);
+            const road9HpLogoY = road9Y - road9HpLogoHeight; // HP Logo底部與road-9頂部貼齊
+            
+            // 創建3個水平排列的HP Logo
+            hpLogoManager.createHorizontalHpLogos(road9HpLogoX, road9HpLogoY, 3, road9HpLogoSpacing, GAME_HEIGHT);
+            
+            console.log('🩹 Road-9上方HP Logo創建完成（3個）');
+
+            // 創建laboratory-1
+            const laboratory1HeightRatio = 209 / 512; // 209像素高度在512背景中的比例 (40.82%)
+            let laboratory1Width, laboratory1Height;
+            
+            if (roadOriginalSizes['laboratory-1']) {
+                const originalSize = roadOriginalSizes['laboratory-1'];
+                const originalRatio = originalSize.width / originalSize.height;
+                
+                // 根據當前遊戲高度計算laboratory-1高度
+                laboratory1Height = Math.floor(GAME_HEIGHT * laboratory1HeightRatio);
+                // 根據原始比例計算寬度
+                laboratory1Width = Math.floor(laboratory1Height * originalRatio);
+                
+                console.log(`🎯 Laboratory-1動態尺寸計算: 遊戲高度${GAME_HEIGHT} → laboratory-1高度${laboratory1Height}, 寬度${laboratory1Width} (原始比例${originalRatio.toFixed(2)})`);
+            } else {
+                // 如果沒有原始尺寸，使用預設比例，假設寬高比為4:3
+                laboratory1Height = Math.floor(GAME_HEIGHT * laboratory1HeightRatio);
+                laboratory1Width = Math.floor(laboratory1Height * (4/3)); // 預設比例
+                
+                console.log(`⚠️ Laboratory-1使用預設比例: 高度${laboratory1Height}, 寬度${laboratory1Width}`);
+            }
+
+            // 計算laboratory-1位置
+            const laboratory1LeftDistanceRatio = 112 / 512; // 112像素距離在512背景中的比例 (21.88%)
+            const laboratory1LeftDistance = Math.floor(GAME_HEIGHT * laboratory1LeftDistanceRatio);
+            
+            // 計算HP Logo模組的右邊位置
+            const road9HpLogoWidth = road9HpLogoHeight; // 假設為正方形
+            const hpLogosTotalWidth = (road9HpLogoWidth * 3) + (road9HpLogoSpacing * 2); // 3個HP Logo + 2個間距
+            const hpLogosRightX = road9HpLogoX + hpLogosTotalWidth;
+            
+            const laboratory1X = hpLogosRightX + laboratory1LeftDistance; // laboratory-1左邊與hp-logo模組右邊距離112像素
+            const laboratory1Y = road9Y - laboratory1Height; // laboratory-1底部貼齊road-9的頂部
+
+            // 添加laboratory-1到world.roads
+            world.roads.push({
+                x: laboratory1X,
+                y: laboratory1Y,
+                width: laboratory1Width,
+                height: laboratory1Height,
+                type: 'laboratory-1',
+                isTransformed: false,
+                transformStartTime: null,
+                transformDuration: 100 // 0.1秒轉換時間
+            });
+
+            console.log('🏥 Laboratory-1創建完成:', { x: laboratory1X, y: laboratory1Y, width: laboratory1Width, height: laboratory1Height });
             
             // 同步到舊系統（向後兼容）
             springs = springManager.springs;
@@ -1748,13 +1815,14 @@
                 }
             });
             
-            // 設定世界寬度為最右邊元素位置加上一些緩衝區（一個螢幕寬度）
-            world.width = Math.max(maxX + GAME_WIDTH, 4000); // 最小保持4000，或更大
+            // 設定世界寬度為road-9最右邊，限制遊戲範圍
+            world.width = road9X + road9Width;
             
-            console.log(`🌍 世界寬度動態更新: ${world.width}px (最右邊元素位置: ${maxX}px)`);
+            console.log(`🌍 世界寬度限制在road-9右邊: ${world.width}px`);
             
-            // 已刪除終點設定（lab 藍色框框）
-            world.endpoint = null;
+            // 遊戲終點設定在road-9最右邊
+            world.endpoint = road9X + road9Width;
+            console.log(`🎯 遊戲終點設定在: ${world.endpoint}px (road-9最右邊)`);
         }
         
         function setupEventListeners() {
@@ -1817,6 +1885,7 @@
             checkCollisions();
             springManager.checkTriggerCollisions(player);
             updateFallingPlatforms();
+            updateLaboratory();
             checkEndpoint();
         }
         
@@ -2011,9 +2080,43 @@
             });
         }
 
+        function updateLaboratory() {
+            const currentTime = Date.now();
+            
+            world.roads.forEach(road => {
+                if (road.type === 'laboratory-1' && !road.isTransformed) {
+                    // 檢查主角是否走到laboratory-1的寬度2/5位置
+                    const triggerX = road.x + (road.width * 0.4); // 2/5 = 0.4
+                    
+                    if (player.x >= triggerX) {
+                        road.isTransformed = true;
+                        road.transformStartTime = currentTime;
+                        road.type = 'laboratory-2';
+                        console.log('🏥 Laboratory-1轉換為Laboratory-2！');
+                    }
+                } else if (road.type === 'laboratory-2' && road.isTransformed) {
+                    const transformProgress = (currentTime - road.transformStartTime) / road.transformDuration;
+                    
+                    if (transformProgress >= 1) {
+                        // 轉換完成，遊戲結束
+                        console.log('🎉 遊戲勝利！主角成功進入實驗室！');
+                        endGame(true);
+                    } else {
+                        // 正在轉換，主角透明度逐漸降低
+                        const alpha = 1 - transformProgress;
+                        player.alpha = alpha;
+                    }
+                }
+            });
+        }
+
         function checkEndpoint() {
-            // 已刪除終點檢測（lab 藍色框框）
-            return;
+            // 檢查主角是否到達遊戲終點
+            if (world.endpoint && player.x >= world.endpoint) {
+                console.log('🎯 主角到達遊戲終點！');
+                // 主角不能繼續往右走
+                player.x = world.endpoint;
+            }
         }
         
         function takeDamage(amount) {
@@ -2094,7 +2197,8 @@
                 velocityX: 0, velocityY: 0, onGround: false,
                 health: 100, maxHealth: 100,
                 shieldActive: false, shieldHits: 0,
-                facingRight: true
+                facingRight: true,
+                alpha: 1
             };
             
             // 重置動畫狀態
@@ -2686,7 +2790,7 @@
 
 
         function loadRoadImages() {
-            const roadTypes = ['road-1', 'road-kanban', 'road-2', 'road-3', 'road-4', 'road-5', 'road-7', 'road-8', 'road-9', 'road-mid', 'road-short-1', 'road-short-2', 'house-1', 'house-2', 'house-3', 'house-4', 'house-5', 'house-6', 'house-7', 'house-8', 'bridge-1', 'bridge-2'];
+            const roadTypes = ['road-1', 'road-kanban', 'road-2', 'road-3', 'road-4', 'road-5', 'road-7', 'road-8', 'road-9', 'road-mid', 'road-short-1', 'road-short-2', 'house-1', 'house-2', 'house-3', 'house-4', 'house-5', 'house-6', 'house-7', 'house-8', 'bridge-1', 'bridge-2', 'laboratory-1', 'laboratory-2'];
             let loadedCount = 0;
             
             roadTypes.forEach(type => {
@@ -2744,6 +2848,13 @@
                         ctx.imageSmoothingEnabled = false;
                         ctx.drawImage(roadImages[road.type], x, y, road.width, road.height);
                         ctx.restore();
+                    } else if (road.type === 'laboratory-2') {
+                        // laboratory-2顯示為不同的顏色
+                        ctx.fillStyle = '#FFD700'; // 金色
+                        ctx.strokeStyle = '#FFA500';
+                        ctx.lineWidth = 2;
+                        ctx.fillRect(x, y, road.width, road.height);
+                        ctx.strokeRect(x, y, road.width, road.height);
                     } else {
                         // 如果圖片未載入，繪製預設的方塊
                         if ((road.type === 'road-short-1' || road.type === 'road-short-2') && road.isFalling) {
@@ -2828,6 +2939,10 @@
             // 使用Math.floor確保整數像素位置，避免閃爍
             const x = Math.floor(player.x - camera.x);
             const y = Math.floor(player.y - camera.y);
+            
+            // 設定透明度
+            const alpha = player.alpha !== undefined ? player.alpha : 1;
+            ctx.globalAlpha = alpha;
             
             let hasValidSprite = false;
             let sprite = null;
@@ -2916,6 +3031,9 @@
                 ctx.font = '12px "Press Start 2P"';
                 ctx.fillText(`${3 - player.shieldHits}`, x + player.width + 8, y + 15);
             }
+            
+            // 重置透明度
+            ctx.globalAlpha = 1;
         }
         
         function gameLoop() {
