@@ -4,9 +4,7 @@
 
 // 遊戲變數
 let canvas, ctx;
-let gameState = 'story';
-let currentStoryPage = 1;
-let maxStoryPages = 3;
+let gameState = 'playing';
 let gameLoopId = null;
 
 // 背景圖片變數
@@ -211,6 +209,7 @@ function init() {
     createWorld();
     setupEventListeners();
     updateUI();
+    gameLoop(); // 直接開始遊戲
 }
 
 // 更新Canvas尺寸
@@ -377,27 +376,7 @@ function setupEventListeners() {
 // 遊戲流程控制
 // ===============================
 
-function nextPage() {
-    if (currentStoryPage < maxStoryPages) {
-        document.querySelector(`.story-page[data-page="${currentStoryPage}"]`).classList.remove('active');
-        currentStoryPage++;
-        document.querySelector(`.story-page[data-page="${currentStoryPage}"]`).classList.add('active');
-        
-        if (currentStoryPage === maxStoryPages) {
-            document.getElementById('nextBtn').classList.add('hidden');
-            document.getElementById('startBtn').classList.remove('hidden');
-        }
-    }
-}
-
-function startGame() {
-    document.getElementById('storyModal').classList.add('hidden');
-    gameState = 'playing';
-    if (gameLoopId) {
-        cancelAnimationFrame(gameLoopId);
-    }
-    gameLoop();
-}
+// 故事相關函數已移除
 
 function endGame(success) {
     // 停止遊戲循環
@@ -429,8 +408,7 @@ function restartGame() {
         gameLoopId = null;
     }
     
-    gameState = 'story';
-    currentStoryPage = 1;
+    gameState = 'playing';
     
     // 動態計算角色大小
     const playerSize = calculatePlayerSize();
@@ -468,12 +446,6 @@ function restartGame() {
     updateUI();
     
     document.getElementById('endingModal').style.display = 'none';
-    document.getElementById('storyModal').classList.remove('hidden');
-    
-    document.querySelectorAll('.story-page').forEach(page => page.classList.remove('active'));
-    document.querySelector('.story-page[data-page="1"]').classList.add('active');
-    document.getElementById('nextBtn').classList.remove('hidden');
-    document.getElementById('startBtn').classList.add('hidden');
 }
 
 // ===============================

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="171" height="58" viewBox="0 0 171 58">
+	<rect width="9" height="18" transform="matrix(1 0 0 1 0 20)" fill="rgb(107, 214, 132)"/>
+	<rect width="9" height="12" transform="matrix(1 0 0 1 9 8)" fill="rgb(107, 214, 132)"/>
+	<rect width="9" height="12" transform="matrix(1 0 0 1 153 8)" fill="rgb(107, 214, 132)"/>
+	<rect width="9" height="12" transform="matrix(1 0 0 1 9 38)" fill="rgb(107, 214, 132)"/>
+	<rect width="9" height="12" transform="matrix(1 0 0 1 153 38)" fill="rgb(107, 214, 132)"/>
+	<rect width="9" height="18" transform="matrix(1 0 0 1 162 20)" fill="rgb(107, 214, 132)"/>
+	<rect width="5" height="22" transform="matrix(1 0 0 1 130 18)" fill="rgb(107, 214, 132)"/>
+	<rect width="5" height="16" transform="matrix(1 0 0 1 135 21)" fill="rgb(107, 214, 132)"/>
+	<rect width="5" height="10" transform="matrix(1 0 0 1 140 24)" fill="rgb(107, 214, 132)"/>
+	<rect width="3" height="4" transform="matrix(1 0 0 1 145 27)" fill="rgb(107, 214, 132)"/>
+	<rect width="8" height="135" transform="matrix(0 1 -1 0 153 0)" fill="rgb(107, 214, 132)"/>
+	<rect width="8" height="135" transform="matrix(0 1 -1 0 153 50)" fill="rgb(107, 214, 132)"/>
+	<rect width="6" height="8" transform="matrix(1 0 0 1 77 14)" fill="rgb(107, 214, 132)"/>
+	<rect width="6" height="8" transform="matrix(1 0 0 1 77 35)" fill="rgb(107, 214, 132)"/>
+	<rect width="6" height="8" transform="matrix(1 0 0 1 92 14)" fill="rgb(107, 214, 132)"/>
+	<rect width="6" height="8" transform="matrix(1 0 0 1 92 35)" fill="rgb(107, 214, 132)"/>
+	<rect width="4" height="5" transform="matrix(1 0 0 1 81 22)" fill="rgb(107, 214, 132)"/>
+	<rect width="4" height="5" transform="matrix(1 0 0 1 81 31)" fill="rgb(107, 214, 132)"/>
+	<rect width="7" height="6" transform="matrix(1 0 0 1 84 26)" fill="rgb(107, 214, 132)"/>
+	<rect width="4" height="5" transform="matrix(1 0 0 1 90 22)" fill="rgb(107, 214, 132)"/>
+	<rect width="4" height="5" transform="matrix(1 0 0 1 90 31)" fill="rgb(107, 214, 132)"/>
+	<rect width="5" height="29" transform="matrix(1 0 0 1 109 14)" fill="rgb(107, 214, 132)"/>
+	<rect width="5" height="21" transform="matrix(0 1 -1 0 122 14)" fill="rgb(107, 214, 132)"/>
+	<rect width="5" height="29" transform="matrix(1 0 0 1 55 14)" fill="rgb(107, 214, 132)"/>
+	<rect width="4" height="14" transform="matrix(0 1 -1 0 74 14)" fill="rgb(107, 214, 132)"/>
+	<rect width="4" height="14" transform="matrix(0 1 -1 0 74 39)" fill="rgb(107, 214, 132)"/>
+	<rect width="4" height="13" transform="matrix(0 1 -1 0 73 27)" fill="rgb(107, 214, 132)"/>
+	<rect width="5" height="29" transform="matrix(1 0 0 1 29 14)" fill="rgb(107, 214, 132)"/>
+	<rect width="5" height="29" transform="matrix(1 0 0 1 47 14)" fill="rgb(107, 214, 132)"/>
+	<rect width="4" height="9" transform="matrix(1 0 0 1 34 18)" fill="rgb(107, 214, 132)"/>
+	<rect width="3" height="9" transform="matrix(1 0 0 1 38 22)" fill="rgb(107, 214, 132)"/>
+	<rect width="3" height="9" transform="matrix(1 0 0 1 41 27)" fill="rgb(107, 214, 132)"/>
+	<rect width="3" height="10" transform="matrix(1 0 0 1 44 31)" fill="rgb(107, 214, 132)"/>
+</svg>

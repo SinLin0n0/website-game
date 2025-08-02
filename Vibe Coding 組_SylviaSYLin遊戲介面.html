@@ -43,65 +43,108 @@
             height: calc(100vh * 513 / 749); /* 按比例動態高度 */
         }
         
-        /* 故事背景視窗 */
-        .story-modal {
+        /* 前言背景視窗 */
+        .intro-modal {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.9);
             display: flex;
             justify-content: center;
             align-items: center;
             z-index: 1000;
         }
         
-        .story-content {
-            background: linear-gradient(45deg, #2d1b69, #11998e);
-            border: 4px solid #00ff00;
-            border-radius: 0;
-            padding: 30px;
-            max-width: 600px;
-            min-height: 400px;
-            position: relative;
-            box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
-        }
-        
-        .story-page {
-            display: none;
-            line-height: 1.8;
-            font-size: 12px;
-        }
-        
-        .story-page.active {
-            display: block;
-        }
-        
-        .story-nav {
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-        }
-        
-        .story-button {
-            background: #00ff00;
-            color: #000;
+        .intro-content {
+            background: url('story-bg.svg') no-repeat center center;
+            background-size: cover;
             border: none;
-            padding: 10px 20px;
-            font-family: inherit;
-            font-size: 10px;
-            cursor: pointer;
-            border: 2px solid #000;
-            transition: all 0.1s;
+            border-radius: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            position: relative;
         }
         
-        .story-button:hover {
-            background: #fff;
-            transform: scale(1.05);
+        .intro-background {
+            width: 100%;
+            height: 100%;
+            min-height: 400px;
         }
         
+        .content-wrapper {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 36px; /* 固定間距 */
+        }
 
+        .story-1-container {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
+        
+        .story-1-image {
+            width: auto;
+            height: auto;
+            max-width: 80vw;
+            max-height: 60vh; /* 減少高度以留出按鈕空間 */
+            opacity: 0;
+            animation: fadeIn 1s ease-in-out forwards;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        
+        .next-btn-container {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            opacity: 0;
+            animation: fadeIn 1s ease-in-out forwards;
+        }
+        
+        .next-btn-image {
+            width: auto;
+            height: auto;
+            max-width: min(200px, 30vw);
+            max-height: min(80px, 12vw);
+            min-width: 100px;
+            min-height: 40px;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            display: block;
+            object-fit: contain;
+        }
+        
+        .next-btn-image:hover {
+            transform: scale(1.1);
+        }
+        
+        @keyframes showNextBtn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
         
         /* 結局視窗 */
         .ending-modal {
@@ -161,53 +204,22 @@
 </head>
 <body>
     <div class="game-container">
-        <!-- 故事背景視窗 -->
-        <div class="story-modal" id="storyModal">
-            <div class="story-content">
-                <div class="story-page active" data-page="1">
-                    <h3 style="color: #00ff00; margin-bottom: 20px;">第一章：突破重圍</h3>
-                    <p>西元2147年，人類科技已經發展到巔峰。</p>
-                    <br>
-                                    <p>你是一名研究員，意外發現了一個驚人的秘密...</p>
-                <br>
-                <p>這個地方的防禦系統突然啟動，各種障礙物開始攻擊入侵者。</p>
-                    <br>
-                    <p>你必須想辦法逃出這個危險的地方！</p>
+        <!-- 前言背景視窗 -->
+        <div class="intro-modal" id="introModal">
+            <div class="intro-content">
+                <div class="intro-background">
+                    <!-- 這裡可以放置你的前言內容 -->
                 </div>
-                
-                <div class="story-page" data-page="2">
-                    <h3 style="color: #00ff00; margin-bottom: 20px;">第二章：逃脫計畫</h3>
-                    <p>沿途會有電信門市提供補給物品。</p>
-                    <br>
-                    <p>🩹 補血物品：可以恢復你的生命值</p>
-                    <p>🛡️ 防護罩：能抵擋三次攻擊</p>
-                    <br>
-                    <p>小心從天而降的障礙物，它們會造成傷害！</p>
-                    <br>
-                    <p>避開地面的陷阱，掉下去就完蛋了。</p>
-                </div>
-                
-                <div class="story-page" data-page="3">
-                    <h3 style="color: #00ff00; margin-bottom: 20px;">操作說明</h3>
-                    <p>🎮 左右方向鍵：移動角色</p>
-                    <br>
-                    <p>🚀 空白鍵：跳躍</p>
-                    <br>
-                    <p>🖱️ 雙擊物品：使用補給品</p>
-                    <br>
-                    <p>你的目標是逃離這個危險的地方！</p>
-                    <br>
-                    <p style="color: #ff6b6b;">準備好了嗎？讓我們開始冒險吧！</p>
-                </div>
-                
-                <div class="story-nav">
-                    <button class="story-button" id="nextBtn" onclick="nextPage()">下一頁 ▶</button>
-                    <button class="story-button hidden" id="startBtn" onclick="startGame()">開始遊戲</button>
+                <div class="content-wrapper">
+                    <div class="story-1-container">
+                        <img alt="Story 1" class="story-1-image" id="story1Image">
+                    </div>
+                    <div class="next-btn-container">
+                        <img alt="Next Button" class="next-btn-image" id="nextBtnImage">
+                    </div>
                 </div>
             </div>
         </div>
-        
-
         
         <!-- 遊戲畫布 -->
         <canvas id="gameCanvas"></canvas>
@@ -225,9 +237,8 @@
     <script>
         // 遊戲變數
         let canvas, ctx;
-        let gameState = 'story';
-        let currentStoryPage = 1;
-        let maxStoryPages = 3;
+        let gameState = 'intro';
+        // 故事相關變數已移除
         let victoryStartTime = null;
         let victoryDuration = 2000;
         let gameLoopId = null;
@@ -481,6 +492,8 @@
             createWorld();
             setupEventListeners();
             updateUI();
+            setupStory1Image(); // 設置 story-1 圖片
+            gameLoop(); // 啟動遊戲循環以顯示前言背景
         }
         
         // 更新Canvas尺寸
@@ -1773,30 +1786,240 @@
             });
         }
         
-        function nextPage() {
-            if (currentStoryPage < maxStoryPages) {
-                document.querySelector(`.story-page[data-page="${currentStoryPage}"]`).classList.remove('active');
-                currentStoryPage++;
-                document.querySelector(`.story-page[data-page="${currentStoryPage}"]`).classList.add('active');
+        // 設置 story-1 圖片尺寸和 next-btn 位置
+        function setupStory1Image() {
+            const story1Image = document.getElementById('story1Image');
+            const nextBtnContainer = document.querySelector('.next-btn-container');
+            const nextBtnImage = document.getElementById('nextBtnImage');
+            
+            if (story1Image && nextBtnContainer && nextBtnImage) {
+                // 預先載入 next-btn 圖片
+                nextBtnImage.src = 'next-btn.svg';
                 
-                if (currentStoryPage === maxStoryPages) {
-                    document.getElementById('nextBtn').classList.add('hidden');
-                    document.getElementById('startBtn').classList.remove('hidden');
-                }
+                // 追蹤點擊次數的變數
+                let clickCount = 0;
+                let isProcessingClick = false; // 防止快速連續點擊
+
+                // 創建調整圖片尺寸的函數
+                function adjustImageSize() {
+                    // 根據你提供的比例計算
+                    // story-bg 高度 749，story-1 高度 536
+                    // 比例為 536/749 ≈ 0.715
+                    const storyBgHeight = 749;
+                    const story1Height = 400;
+                    const heightRatio = story1Height / storyBgHeight; // 0.715
+                    
+                    // 獲取當前視窗高度（這是 story-bg 的實際高度）
+                    const windowHeight = window.innerHeight;
+                    
+                    // 計算 story-1 的目標高度
+                    const targetHeight = Math.floor(windowHeight * heightRatio);
+                    
+                    console.log(`🔍 視窗高度: ${windowHeight}px`);
+                    console.log(`🔍 Story-1 目標高度: ${targetHeight}px (${heightRatio * 100}% 的視窗高度)`);
+                    
+                    // 驗證比例是否正確
+                    const actualRatio = targetHeight / windowHeight;
+                    console.log(`🔍 實際比例: ${actualRatio.toFixed(3)} (應為 ${heightRatio.toFixed(3)})`);
+                    
+                    // 如果比例不正確，強制使用正確的比例
+                    if (Math.abs(actualRatio - heightRatio) > 0.001) {
+                        console.log(`⚠️ 比例不正確，調整中...`);
+                        const correctedHeight = Math.floor(windowHeight * heightRatio);
+                        if (correctedHeight !== targetHeight) {
+                            console.log(`📐 調整高度: ${targetHeight}px → ${correctedHeight}px`);
+                            targetHeight = correctedHeight;
+                        }
+                    }
+                    
+                    // 保持原始寬高比
+                    const originalWidth = this.naturalWidth;
+                    const originalHeight = this.naturalHeight;
+                    const aspectRatio = originalWidth / originalHeight;
+                    
+                    // 計算對應的寬度
+                    const targetWidth = Math.floor(targetHeight * aspectRatio);
+                    
+                    // 設定圖片尺寸
+                    this.style.width = targetWidth + 'px';
+                    this.style.height = targetHeight + 'px';
+                    
+                    console.log(`📏 Story-1 尺寸設定: ${targetWidth}x${targetHeight} (比例: ${heightRatio.toFixed(3)})`);
+                    
+                    // 計算 next-btn 的位置
+                    const story1CenterY = windowHeight / 2;
+                    const story1Top = story1CenterY - (targetHeight / 2);
+                    const story1Bottom = story1Top + targetHeight;
+                    
+                    // 計算 next-btn 與 story-1 的距離
+                    // 當 story-bg 高度為 749px 時，距離為 36px
+                    // 所以距離也要根據視窗高度等比例縮放
+                    const baseDistance = 16;
+                    const distanceRatio = baseDistance / storyBgHeight; // 36/749
+                    const distanceFromStory1 = Math.floor(windowHeight * distanceRatio);
+                    
+                    console.log(`📏 Next-btn 距離: ${distanceFromStory1}px (原始 ${baseDistance}px 的 ${(distanceRatio * 100).toFixed(2)}%)`);
+                    
+                    const nextBtnTop = story1Bottom + distanceFromStory1;
+                    
+                    // 設定 next-btn 容器位置
+                    // 只設定垂直位置，水平位置由 CSS 控制 (left: 50%, transform: translateX(-50%))
+                    nextBtnContainer.style.top = nextBtnTop + 'px';
+                    
+                    console.log(`📍 Next-btn 位置: top=${nextBtnTop}px, 水平置中 (與story-1 x軸對齊)`);
+                    
+                    // 確保按鈕可以被點擊
+                    nextBtnImage.style.pointerEvents = 'auto';
+                    nextBtnImage.style.cursor = 'pointer';
+                    console.log('🔗 按鈕事件監聽器準備添加');
+                    
+                    // 立即添加點擊事件（因為動畫會自動開始）
+                    nextBtnImage.addEventListener('click', function(event) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        
+                        // 防止快速連續點擊
+                        if (isProcessingClick) {
+                            console.log('⚠️ 點擊處理中，忽略此次點擊');
+                            return;
+                        }
+                        
+                        isProcessingClick = true;
+                        
+                        // 檢查當前按鈕類型
+                        const isStartBtn = nextBtnImage.src.includes('start-btn.svg');
+                        console.log(`🖱️ Button clicked! 當前按鈕類型: ${isStartBtn ? 'start-btn' : 'next-btn'}, 處理中...`);
+                        
+                        if (isStartBtn) {
+                            // 如果是 start-btn，直接開始遊戲
+                            console.log('🎮 點擊 start-btn，開始遊戲！');
+                            startGame();
+                            isProcessingClick = false;
+                        } else {
+                            // 如果是 next-btn，進行故事切換
+                            clickCount++;
+                            console.log(`📄 Next-btn 點擊次數: ${clickCount}`);
+                            
+                            if (clickCount === 1) {
+                                // 第一次點擊：切換到 story-2
+                                story1Image.onload = adjustImageSize;
+                                story1Image.src = 'story-2.svg';
+                                console.log('📄 切換到 story-2');
+                                
+                                // 延遲解鎖點擊
+                                setTimeout(() => {
+                                    isProcessingClick = false;
+                                    console.log('🔓 點擊處理完成，可以再次點擊');
+                                }, 500);
+                                
+                            } else if (clickCount === 2) {
+                                // 第二次點擊：切換到 story-3 並改變按鈕圖片
+                                story1Image.onload = adjustImageSize;
+                                story1Image.src = 'story-3.svg';
+                                
+                                // 延遲切換按鈕圖片，避免立即觸發事件
+                                setTimeout(() => {
+                                    console.log('🔄 準備切換按鈕為 start-btn');
+                                    nextBtnImage.src = 'start-btn.svg';
+                                    console.log('✅ 按鈕已切換為 start-btn');
+                                    
+                                    // 延遲解鎖點擊
+                                    setTimeout(() => {
+                                        isProcessingClick = false;
+                                        console.log('🔓 點擊處理完成，可以點擊 start-btn');
+                                    }, 200);
+                                }, 100);
+                                
+                                console.log('📄 切換到 story-3，按鈕將在 100ms 後變為 start-btn');
+                            }
+                        }
+                    });
+                    
+                    console.log('✅ 按鈕事件監聽器已添加');
+                    
+                    // 測試點擊功能
+                    nextBtnImage.addEventListener('mousedown', function() {
+                        console.log('🖱️ 滑鼠按下按鈕！');
+                    });
+                    
+                    nextBtnImage.addEventListener('mouseup', function() {
+                        console.log('🖱️ 滑鼠放開按鈕！');
+                    });
+                };
+                
+                // 設定圖片載入事件
+                story1Image.onload = adjustImageSize;
+                
+                // 設定 story-1 圖片來源以觸發 onload
+                story1Image.src = 'story-1.svg';
             }
         }
         
-        function startGame() {
-            document.getElementById('storyModal').classList.add('hidden');
-            gameState = 'playing';
-            if (gameLoopId) {
-                cancelAnimationFrame(gameLoopId);
+        // 設置 next-btn 位置
+        function setupNextBtnPosition(story1Height) {
+            const nextBtnContainer = document.querySelector('.next-btn-container');
+            const nextBtnImage = document.getElementById('nextBtnImage');
+            
+            if (nextBtnContainer && nextBtnImage) {
+                nextBtnImage.onload = function() {
+                    // 計算 next-btn 的位置
+                    // 距離 story-1 底部 36 像素
+                    const distanceFromStory1 = 36;
+                    
+                    // 計算 story-1 的位置
+                    const windowHeight = window.innerHeight;
+                    const story1CenterY = windowHeight / 2;
+                    const story1Top = story1CenterY - (story1Height / 2);
+                    const story1Bottom = story1Top + story1Height;
+                    
+                    // 設定 next-btn 容器位置
+                    const nextBtnTop = story1Bottom + distanceFromStory1;
+                    nextBtnContainer.style.top = nextBtnTop + 'px';
+                    console.log(`📏 Story-1 位置: top=${story1Top}, bottom=${story1Bottom}`);
+                    console.log(`📏 Next-btn 位置: top=${nextBtnTop} (距離story-1底部${distanceFromStory1}px)`);
+                    
+                    // 設定 next-btn 圖片尺寸（保持適當大小）
+                    
+                    // 在 1 秒後顯示 next-btn（等 story-1 動畫結束）
+                    setTimeout(() => {
+                        nextBtnContainer.style.display = 'block';
+                        console.log('🕐 Next button 顯示');
+                    }, 1000);
+                    const maxWidth = 200;
+                    const maxHeight = 80;
+                    
+                    // 保持原始寬高比
+                    const originalWidth = this.naturalWidth;
+                    const originalHeight = this.naturalHeight;
+                    const aspectRatio = originalWidth / originalHeight;
+                    
+                    let targetWidth, targetHeight;
+                    if (aspectRatio > maxWidth / maxHeight) {
+                        // 寬度優先
+                        targetWidth = maxWidth;
+                        targetHeight = maxWidth / aspectRatio;
+                    } else {
+                        // 高度優先
+                        targetHeight = maxHeight;
+                        targetWidth = maxHeight * aspectRatio;
+                    }
+                    
+                    this.style.width = targetWidth + 'px';
+                    this.style.height = targetHeight + 'px';
+                    
+                    console.log(`📍 Next-btn 位置設定: top=${nextBtnTop}px, 尺寸=${targetWidth}x${targetHeight}`);
+                };
             }
-            gameLoop();
+        }
+        
+        // 開始遊戲函數
+        function startGame() {
+            document.getElementById('introModal').style.display = 'none';
+            gameState = 'playing';
         }
         
         function update() {
-            if (gameState !== 'playing') return;
+            if (gameState !== 'playing' && gameState !== 'intro') return;
             updatePlayer();
             updateCamera();
             checkCollisions();
@@ -2164,8 +2387,8 @@
                 gameLoopId = null;
             }
             
-            gameState = 'story';
-            currentStoryPage = 1;
+            gameState = 'intro';
+            // 故事相關變數重置已移除
             
             // 動態計算角色大小
             const playerSize = calculatePlayerSize();
@@ -2230,15 +2453,17 @@
             updateUI();
             
             document.getElementById('endingModal').style.display = 'none';
-            document.getElementById('storyModal').classList.remove('hidden');
-            
-            document.querySelectorAll('.story-page').forEach(page => page.classList.remove('active'));
-            document.querySelector('.story-page[data-page="1"]').classList.add('active');
-            document.getElementById('nextBtn').classList.remove('hidden');
-            document.getElementById('startBtn').classList.add('hidden');
+            document.getElementById('introModal').style.display = 'flex';
         }
         
         function render() {
+            if (gameState === 'intro') {
+                // 在 intro 狀態下只繪製黑色背景
+                ctx.fillStyle = '#1a1a2e';
+                ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+                return;
+            }
+            
             ctx.fillStyle = '#1a1a2e';
             ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
             
@@ -3945,9 +4170,9 @@
             update();
             springManager.update(player);
             render();
-            if (gameState === 'playing') {
-                gameLoopId = requestAnimationFrame(gameLoop);
-            }
+                if (gameState === 'playing' || gameState === 'intro') {
+        gameLoopId = requestAnimationFrame(gameLoop);
+    }
         }
         
         window.addEventListener('load', init);
