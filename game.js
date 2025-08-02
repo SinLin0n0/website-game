@@ -386,19 +386,18 @@ function endGame(success) {
     }
     
     gameState = 'ended';
-    const modal = document.getElementById('endingModal');
-    const title = document.getElementById('endingTitle');
-    const text = document.getElementById('endingText');
     
     if (success) {
+        const modal = document.getElementById('endingModal');
+        const title = document.getElementById('endingTitle');
+        const text = document.getElementById('endingText');
+        
         title.textContent = '🎉 任務成功！';
         text.innerHTML = `恭喜你成功逃出了危險！<br><br>你發現的秘密將改變整個世界...<br><br>在你的努力下，人類終於找到了<br>突破科技極限的關鍵。<br><br>新的時代即將來臨！`;
-    } else {
-        title.textContent = '💀 任務失敗';
-        text.innerHTML = `你在逃脫過程中不幸犧牲了...<br><br>但你的勇氣激勵了其他研究員，<br><br>他們將繼承你的意志，<br>繼續尋找真相。<br><br>你的犧牲不會白費！`;
+        
+        modal.style.display = 'flex';
     }
-    
-    modal.style.display = 'flex';
+    // 移除失敗畫面處理，為客製化做準備
 }
 
 function restartGame() {
@@ -600,7 +599,12 @@ function takeDamage(amount) {
     player.health -= amount;
     if (player.health <= 0) {
         player.health = 0;
-        endGame(false);
+        // 顯示失敗畫面（如果函數存在）
+        if (typeof showFailureScreen === 'function') {
+            showFailureScreen();
+        } else {
+            console.log('玩家生命值歸零');
+        }
     }
     updateUI();
 }

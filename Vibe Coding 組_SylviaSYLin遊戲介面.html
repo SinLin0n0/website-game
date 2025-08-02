@@ -146,6 +146,84 @@
             }
         }
         
+        /* 失敗畫面視窗 */
+        .failure-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1001;
+        }
+        
+        .failure-content {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+        
+        .failure-background {
+            width: 100%;
+            height: 100%;
+            min-height: 400px;
+        }
+        
+        .failure-wrapper {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 36px; /* 固定間距 */
+        }
+
+        .game-over-container {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
+        
+        .game-over-image {
+            width: auto;
+            height: auto;
+            max-width: 80vw;
+            max-height: 60vh; /* 減少高度以留出按鈕空間 */
+            opacity: 0;
+            animation: fadeIn 1s ease-in-out forwards;
+        }
+        
+        .retry-btn-container {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            opacity: 0;
+            animation: fadeIn 1s ease-in-out forwards;
+        }
+        
+        .retry-btn-image {
+            width: auto;
+            height: auto;
+            max-width: min(200px, 30vw);
+            max-height: min(80px, 12vw);
+            min-width: 100px;
+            min-height: 40px;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            display: block;
+            object-fit: contain;
+        }
+        
+        .retry-btn-image:hover {
+            transform: scale(1.1);
+        }
+        
         /* 結局視窗 */
         .ending-modal {
             position: fixed;
@@ -223,6 +301,23 @@
         
         <!-- 遊戲畫布 -->
         <canvas id="gameCanvas"></canvas>
+        
+        <!-- 失敗畫面視窗 -->
+        <div class="failure-modal" id="failureModal">
+            <div class="failure-content">
+                <div class="failure-background">
+                    <!-- 背景 -->
+                </div>
+                <div class="failure-wrapper">
+                    <div class="game-over-container">
+                        <img alt="Game Over" class="game-over-image" id="gameOverImage">
+                    </div>
+                    <div class="retry-btn-container">
+                        <img alt="Retry Button" class="retry-btn-image" id="retryBtnImage">
+                    </div>
+                </div>
+            </div>
+        </div>
         
         <!-- 結局視窗 -->
         <div class="ending-modal" id="endingModal">
@@ -1829,6 +1924,133 @@
             });
         }
         
+        // 設置失敗畫面圖片尺寸和 retry-btn 位置
+        function setupFailureScreen() {
+            const gameOverImage = document.getElementById('gameOverImage');
+            const retryBtnContainer = document.querySelector('.retry-btn-container');
+            const retryBtnImage = document.getElementById('retryBtnImage');
+            
+            if (gameOverImage && retryBtnContainer && retryBtnImage) {
+                // 預先載入 retry-btn 圖片
+                retryBtnImage.src = 'retry-btn.svg';
+                
+                // 追蹤點擊次數的變數
+                let isProcessingClick = false; // 防止快速連續點擊
+
+                // 創建調整圖片尺寸的函數
+                function adjustFailureImageSize() {
+                    // 根據 game over 圖片比例計算
+                    // 使用與 story-1 相似的比例邏輯
+                    const storyBgHeight = 749;
+                    const gameOverHeight = 400; // 假設與story-1相似的高度
+                    const heightRatio = gameOverHeight / storyBgHeight; // 約0.534
+                    
+                    // 獲取當前視窗高度
+                    const windowHeight = window.innerHeight;
+                    
+                    // 計算 game over 的目標高度
+                    const targetHeight = Math.floor(windowHeight * heightRatio);
+                    
+                    console.log(`🔍 視窗高度: ${windowHeight}px`);
+                    console.log(`🔍 Game Over 目標高度: ${targetHeight}px (${heightRatio * 100}% 的視窗高度)`);
+                    
+                    // 保持原始寬高比
+                    const originalWidth = this.naturalWidth;
+                    const originalHeight = this.naturalHeight;
+                    const aspectRatio = originalWidth / originalHeight;
+                    
+                    // 計算對應的寬度
+                    const targetWidth = Math.floor(targetHeight * aspectRatio);
+                    
+                    // 設定圖片尺寸
+                    this.style.width = targetWidth + 'px';
+                    this.style.height = targetHeight + 'px';
+                    
+                    console.log(`📏 Game Over 尺寸設定: ${targetWidth}x${targetHeight} (比例: ${heightRatio.toFixed(3)})`);
+                    
+                    // 計算 retry-btn 的位置
+                    const gameOverCenterY = windowHeight / 2;
+                    const gameOverTop = gameOverCenterY - (targetHeight / 2);
+                    const gameOverBottom = gameOverTop + targetHeight;
+                    
+                    // 計算 retry-btn 與 game over 的距離
+                    // 使用與前言畫面相同的距離比例
+                    const baseDistance = 16;
+                    const distanceRatio = baseDistance / storyBgHeight;
+                    const distanceFromGameOver = Math.floor(windowHeight * distanceRatio);
+                    
+                    console.log(`📏 Retry-btn 距離: ${distanceFromGameOver}px (原始 ${baseDistance}px 的 ${(distanceRatio * 100).toFixed(2)}%)`);
+
+                    const retryBtnTop = gameOverBottom + distanceFromGameOver;
+                    
+                    // 設定 retry-btn 容器位置
+                    retryBtnContainer.style.top = retryBtnTop + 'px';
+                    
+                    console.log(`📍 Retry-btn 位置: top=${retryBtnTop}px, 水平置中 (與game over x軸對齊)`);
+                    
+                    // 確保按鈕可以被點擊
+                    retryBtnImage.style.pointerEvents = 'auto';
+                    retryBtnImage.style.cursor = 'pointer';
+                    console.log('🔗 Retry按鈕事件監聽器準備添加');
+                    
+                    // 添加點擊事件
+                    retryBtnImage.addEventListener('click', function(event) {
+                        if (isProcessingClick) {
+                            console.log('⚠️ 點擊處理中，請稍候...');
+                            return;
+                        }
+                        
+                        isProcessingClick = true;
+                        console.log('🖱️ Retry Button clicked! 準備重新開始遊戲...');
+                        
+                        // 播放按鈕音效
+                        playButtonAudio();
+                        
+                        // 延遲重新開始以讓音效播放
+                        setTimeout(() => {
+                            restartGame();
+                            isProcessingClick = false;
+                        }, 200);
+                    });
+                }
+                
+                // 當 game over 圖片載入完成時調整尺寸
+                gameOverImage.onload = adjustFailureImageSize;
+                
+                // 設定 game over 圖片來源以觸發 onload
+                gameOverImage.src = 'game over.svg';
+            }
+        }
+        
+        // 顯示失敗畫面
+        function showFailureScreen() {
+            // 停止遊戲循環
+            if (gameLoopId) {
+                cancelAnimationFrame(gameLoopId);
+                gameLoopId = null;
+            }
+            
+            gameState = 'failed';
+            
+            // 停止背景音樂
+            stopGameBGM();
+            
+            // 清除淡出效果
+            if (fadeInterval) {
+                clearInterval(fadeInterval);
+                fadeInterval = null;
+            }
+            
+            // 顯示失敗畫面
+            const failureModal = document.getElementById('failureModal');
+            failureModal.style.display = 'flex';
+            
+            // 設置失敗畫面
+            setupFailureScreen();
+            
+            console.log('💀 失敗畫面顯示');
+        }
+        
         // 設置 story-1 圖片尺寸和 next-btn 位置
         function setupStory1Image() {
             const story1Image = document.getElementById('story1Image');
@@ -2631,14 +2853,16 @@
             if (amount === 1 && typeof heartManager !== 'undefined') {
                 const gameOver = heartManager.loseHeart();
                 if (gameOver) {
-                    endGame(false);
+                    // 顯示失敗畫面
+                    showFailureScreen();
                 }
             } else {
                 // 其他傷害保持原邏輯（如掉落傷害）
                 player.health -= amount;
                 if (player.health <= 0) {
                     player.health = 0;
-                    endGame(false);
+                    // 顯示失敗畫面
+                    showFailureScreen();
                 }
             }
             updateUI();
@@ -2665,23 +2889,21 @@
             
             gameState = 'ended';
             
-            // 音樂淡出效果
-            fadeOutGameBGM(() => {
-                // 淡出完成後顯示結束畫面
-                const modal = document.getElementById('endingModal');
-                const title = document.getElementById('endingTitle');
-                const text = document.getElementById('endingText');
-                
-                if (success) {
+            if (success) {
+                // 音樂淡出效果
+                fadeOutGameBGM(() => {
+                    // 淡出完成後顯示結束畫面
+                    const modal = document.getElementById('endingModal');
+                    const title = document.getElementById('endingTitle');
+                    const text = document.getElementById('endingText');
+                    
                     title.textContent = '🎉 任務成功！';
                     text.innerHTML = `恭喜你成功逃出了危險！<br><br>你發現的秘密將改變整個世界...<br><br>在你的努力下，人類終於找到了<br>突破科技極限的關鍵。<br><br>新的時代即將來臨！`;
-                } else {
-                    title.textContent = '💀 任務失敗';
-                    text.innerHTML = `你在逃脫過程中不幸犧牲了...<br><br>但你的勇氣激勵了其他研究員，<br><br>他們將繼承你的意志，<br>繼續尋找真相。<br><br>你的犧牲不會白費！`;
-                }
-                
-                modal.style.display = 'flex';
-            });
+                    
+                    modal.style.display = 'flex';
+                });
+            }
+            // 移除失敗畫面處理，為客製化做準備
         }
         
         function restartGame() {
@@ -2765,6 +2987,7 @@
             }
             
             document.getElementById('endingModal').style.display = 'none';
+            document.getElementById('failureModal').style.display = 'none';
             document.getElementById('introModal').style.display = 'flex';
         }
         
@@ -4674,7 +4897,7 @@
                     console.log(`❤️ 愛心被扣除，剩餘：${this.currentHearts}/${this.maxHearts}`);
                     
                     if (this.currentHearts === 0) {
-                        console.log('💀 生命歸零，遊戲結束！');
+                        console.log('生命歸零');
                         return true; // 返回true表示遊戲結束
                     }
                 }
