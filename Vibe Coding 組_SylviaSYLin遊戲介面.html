@@ -101,90 +101,7 @@
             transform: scale(1.05);
         }
         
-        /* 遊戲UI */
-        .game-ui {
-            position: fixed;
-            top: 10px;
-            left: 10px;
-            z-index: 100;
-        }
-        
-        .health-bar {
-            background: #ff0000;
-            width: 200px;
-            height: 20px;
-            border: 2px solid #fff;
-            margin-bottom: 10px;
-            position: relative;
-        }
-        
-        .health-fill {
-            background: #00ff00;
-            height: 100%;
-            transition: width 0.3s;
-        }
-        
-        .health-text {
-            position: absolute;
-            top: 2px;
-            left: 5px;
-            font-size: 8px;
-            color: #fff;
-            text-shadow: 1px 1px 0 #000;
-        }
-        
-        .hp-counter {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            margin-bottom: 10px;
-        }
 
-        .hp-label {
-            color: #fff;
-            font-size: 8px;
-            text-shadow: 1px 1px 0 #000;
-        }
-
-        .hp-count {
-            color: #00ff00;
-            font-size: 8px;
-            font-weight: bold;
-            text-shadow: 1px 1px 0 #000;
-        }
-
-        .inventory {
-            display: flex;
-            gap: 5px;
-        }
-        
-        .inventory-item {
-            width: 40px;
-            height: 40px;
-            border: 2px solid #fff;
-            background: #333;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            cursor: pointer;
-            position: relative;
-        }
-        
-        .inventory-count {
-            position: absolute;
-            top: -5px;
-            right: -5px;
-            background: #ff0000;
-            color: white;
-            font-size: 8px;
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
         
         /* 結局視窗 */
         .ending-modal {
@@ -290,27 +207,7 @@
             </div>
         </div>
         
-        <!-- 遊戲UI -->
-        <div class="game-ui">
-            <div class="health-bar">
-                <div class="health-fill" id="healthFill"></div>
-                <div class="health-text" id="healthText">HP: 100/100</div>
-            </div>
-            <div class="hp-counter">
-                <span class="hp-label">收集HP:</span>
-                <span class="hp-count" id="hpCount">0/4</span>
-            </div>
-            <div class="inventory">
-                <div class="inventory-item" id="healthPotions" ondblclick="useHealthPotion()">
-                    🩹
-                    <div class="inventory-count" id="healthCount">0</div>
-                </div>
-                <div class="inventory-item" id="shields" ondblclick="useShield()">
-                    🛡️
-                    <div class="inventory-count" id="shieldCount">0</div>
-                </div>
-            </div>
-        </div>
+
         
         <!-- 遊戲畫布 -->
         <canvas id="gameCanvas"></canvas>
@@ -391,7 +288,7 @@
             roads: [], endpoint: null
         };
         
-        let inventory = { healthPotions: 2, shields: 1 };
+        // inventory變數已移除，因為UI元素已移除
         let keys = {};
         
         // 載入背景圖片
@@ -577,7 +474,9 @@
             hpLogoManager.loadImage();
             springManager.loadImages();
             cloudManager.loadImages();
+            cloudManager2.loadImages();
             lightningManager.loadImages();
+            lightningManager2.loadImages();
             createWorld();
             setupEventListeners();
             updateUI();
@@ -1373,6 +1272,9 @@
 
             console.log('🏠 House-7創建完成:', { x: house7X, y: house7Y, width: house7Width, height: house7Height });
 
+            // 創建CloudManager2的cloud（House-7版本）
+            cloudManager2.createClouds(house7X, house7Width, GAME_HEIGHT);
+
             // 創建road-7
             const road7HeightRatio = 32 / 512; // 32像素高度在512背景中的比例，與road-5相同 (6.25%)
             let road7Width, road7Height;
@@ -1895,16 +1797,38 @@
             updateFallingPlatforms();
             updateLaboratory();
             cloudManager.update();
+            cloudManager2.update();
             // 檢查主角是否走到house-3來觸發cloud動畫
             const house3 = world.roads.find(road => road.type === 'house-3');
             if (house3) {
                 cloudManager.checkTrigger(player, house3.x, house3.width);
             }
+            // 檢查主角是否走到house-7來觸發cloud2動畫
+            const house7 = world.roads.find(road => road.type === 'house-7');
+            if (house7) {
+                cloudManager2.checkTrigger(player, house7.x, house7.width);
+            }
             // 更新閃電系統
             lightningManager.update(cloudManager.clouds, GAME_HEIGHT);
+            lightningManager2.update(cloudManager2.clouds, GAME_HEIGHT);
             // 檢查閃電碰撞
             if (lightningManager.checkCollisions(player)) {
                 takeDamage(1); // 閃電造成1點傷害
+                // 讓主角閃爍兩下
+                player.alpha = 0.0;
+                setTimeout(() => {
+                    player.alpha = 1;
+                }, 200);
+                setTimeout(() => {
+                    player.alpha = 0.0;
+                }, 400);
+                setTimeout(() => {
+                    player.alpha = 1;
+                }, 600);
+            }
+            // 檢查閃電2碰撞
+            if (lightningManager2.checkCollisions(player)) {
+                takeDamage(1); // 閃電2造成1點傷害
                 // 讓主角閃爍兩下
                 player.alpha = 0.0;
                 setTimeout(() => {
@@ -2083,8 +2007,7 @@
             // 使用HP Logo管理器檢查碰撞
             const newlyCollected = hpLogoManager.checkCollisions(player);
             if (newlyCollected > 0) {
-                collectedHpCount += newlyCollected;
-                console.log('💊 HP Logo被收集！當前收集數:', collectedHpCount);
+                            console.log('💊 HP Logo被收集！');
                 updateUI();
             }
             
@@ -2175,29 +2098,15 @@
         }
         
         function useHealthPotion() {
-            if (inventory.healthPotions > 0 && player.health < player.maxHealth) {
-                inventory.healthPotions--;
-                player.health = Math.min(player.maxHealth, player.health + 50);
-                updateUI();
-            }
+            // UI元素已移除，此函數保留以備將來使用
         }
         
         function useShield() {
-            if (inventory.shields > 0 && !player.shieldActive) {
-                inventory.shields--;
-                player.shieldActive = true;
-                player.shieldHits = 0;
-                updateUI();
-            }
+            // UI元素已移除，此函數保留以備將來使用
         }
         
         function updateUI() {
-            const healthPercent = (player.health / player.maxHealth) * 100;
-            document.getElementById('healthFill').style.width = healthPercent + '%';
-            document.getElementById('healthText').textContent = `HP: ${player.health}/${player.maxHealth}`;
-            document.getElementById('healthCount').textContent = inventory.healthPotions;
-            document.getElementById('shieldCount').textContent = inventory.shields;
-            document.getElementById('hpCount').textContent = `${collectedHpCount}/${hpLogoManager.getTotalCount()}`;
+            // UI元素已移除，此函數保留以備將來使用
         }
         
         function endGame(success) {
@@ -2270,7 +2179,7 @@
             inventory = { healthPotions: 2, shields: 1 };
             
             // 重置HP Logo收集計數和狀態
-            collectedHpCount = 0;
+            // collectedHpCount重置已移除
             hpLogoManager.reset();
             
             // 重置road-short-1和road-short-2掉落狀態
@@ -2285,7 +2194,9 @@
             // Spring已在createWorld()中清空並重新創建，只需重置狀態
             springManager.reset();
             cloudManager.reset();
+            cloudManager2.reset();
             lightningManager.reset();
+            lightningManager2.reset();
             
             // 清除所有按鍵狀態
             keys = {};
@@ -2310,7 +2221,9 @@
             hpLogoManager.draw(ctx, camera, GAME_WIDTH, GAME_HEIGHT);
             springManager.draw(ctx, camera, GAME_WIDTH, GAME_HEIGHT);
             cloudManager.draw(ctx, camera, GAME_WIDTH, GAME_HEIGHT);
+            cloudManager2.draw(ctx, camera, GAME_WIDTH, GAME_HEIGHT);
             lightningManager.draw(ctx, camera, GAME_WIDTH, GAME_HEIGHT);
+            lightningManager2.draw(ctx, camera, GAME_WIDTH, GAME_HEIGHT);
             // drawEndpoint(); // 已刪除 lab 藍色框框
             drawPlayer();
             
@@ -2374,7 +2287,7 @@
         // HP Logo 系統
         // HP Logo系統已移至HpLogoManager模組
         let hpLogos = []; // 向後兼容
-        let collectedHpCount = 0; // 收集到的hp數量
+        // collectedHpCount變數已移除，因為UI元素已移除
 
         // Spring 彈簧系統
         let springs = [];
@@ -2383,6 +2296,8 @@
 
         // ===============================
         // Lightning 閃電模組
+        // ===============================
+        // Lightning 閃電模組 (House-3)
         // ===============================
         class LightningManager {
             constructor() {
@@ -2573,7 +2488,198 @@
         }
 
         // ===============================
-        // Cloud 雲朵模組
+        // Lightning 閃電模組 (House-7)
+        // ===============================
+        class LightningManager2 {
+            constructor() {
+                this.lightnings = [];
+                this.imagesLoaded = false;
+                this.images = {};
+                this.isActive = false;
+                this.lastLightningTime = 0;
+                this.lightningInterval = 300; // 0.3秒產生一次閃電
+                this.lightningDuration = 2000; // 2秒閃電持續時間
+                this.maxLightnings = 10; // 最多同時存在10個閃電
+                this.cloudLastLightningTime = {}; // 記錄每個cloud最後產生閃電的時間
+                this.cloudLightningInterval = 800; // 每個cloud 0.8秒才能產生一次閃電
+                this.playerLastHitTime = 0; // 記錄主角最後被擊中的時間
+                this.playerHitCooldown = 1000; // 主角被擊中後1秒內不會再次受傷
+            }
+
+            // 載入Lightning圖片
+            loadImages() {
+                const lightningTypes = ['lightning'];
+                let loadedCount = 0;
+
+                lightningTypes.forEach(type => {
+                    const img = new Image();
+                    img.onload = () => {
+                        this.images[type] = img;
+                        loadedCount++;
+                        if (loadedCount === lightningTypes.length) {
+                            this.imagesLoaded = true;
+                            console.log('⚡ Lightning2圖片載入完成');
+                        }
+                    };
+                    img.onerror = () => {
+                        console.log(`❌ Lightning2圖片載入失敗: ${type}`);
+                        loadedCount++;
+                        if (loadedCount === lightningTypes.length) {
+                            this.imagesLoaded = true;
+                        }
+                    };
+                    img.src = `${type}.svg`;
+                });
+            }
+
+            // 啟動閃電系統
+            startLightning() {
+                this.isActive = true;
+                this.lastLightningTime = Date.now();
+                console.log('⚡ Lightning2系統啟動！');
+            }
+
+            // 更新閃電
+            update(clouds, GAME_HEIGHT) {
+                if (!this.isActive || !clouds || clouds.length === 0) return;
+
+                const currentTime = Date.now();
+
+                // 檢查是否有cloud在動畫中
+                const activeClouds = clouds.filter(cloud => cloud.isAnimating);
+                if (activeClouds.length === 0) return;
+
+                // 連續性產生閃電（不限制cloud間隔，但限制總數量）
+                if (this.lightnings.length < this.maxLightnings) {
+                    // 隨機選擇一個動畫中的cloud
+                    const randomCloud = activeClouds[Math.floor(Math.random() * activeClouds.length)];
+                    
+                    // 添加一些隨機性，讓閃電產生更自然
+                    const randomDelay = Math.random() * 500; // 0-500ms的隨機延遲
+                    if (currentTime - this.lastLightningTime > this.lightningInterval + randomDelay) {
+                        this.createLightning(randomCloud, GAME_HEIGHT);
+                        this.lastLightningTime = currentTime;
+                    }
+                }
+
+                // 更新現有閃電
+                this.lightnings.forEach((lightning, index) => {
+                    const elapsed = currentTime - lightning.startTime;
+                    const progress = elapsed / this.lightningDuration;
+
+                    if (progress >= 1) {
+                        // 閃電結束，移除
+                        this.lightnings.splice(index, 1);
+                    } else {
+                        // 更新閃電位置（從cloud往下落）
+                        const fallDistance = GAME_HEIGHT; // 掉落距離為整個遊戲高度
+                        lightning.y = lightning.cloudY + (fallDistance * progress);
+                    }
+                });
+            }
+
+            // 創建閃電
+            createLightning(cloud, GAME_HEIGHT) {
+                // 計算lightning尺寸
+                const lightningHeightRatio = 24 / 512; // 24像素高度在512背景中的比例 (4.69%)
+                const lightningHeight = Math.floor(GAME_HEIGHT * lightningHeightRatio);
+                
+                let lightningWidth;
+                if (roadOriginalSizes['lightning']) {
+                    const originalSize = roadOriginalSizes['lightning'];
+                    const originalRatio = originalSize.width / originalSize.height;
+                    lightningWidth = Math.floor(lightningHeight * originalRatio);
+                } else if (this.images['lightning'] && this.images['lightning'].complete) {
+                    const ratio = this.images['lightning'].naturalWidth / this.images['lightning'].naturalHeight;
+                    lightningWidth = Math.floor(lightningHeight * ratio);
+                } else {
+                    lightningWidth = lightningHeight; // 預設為正方形
+                }
+
+                // 在cloud範圍內隨機位置
+                const minX = cloud.x;
+                const maxX = cloud.x + cloud.width - lightningWidth;
+                const lightningX = minX + Math.random() * (maxX - minX);
+
+                const lightning = {
+                    x: lightningX,
+                    y: cloud.y + cloud.height, // 從cloud底部開始
+                    width: lightningWidth,
+                    height: lightningHeight,
+                    cloudY: cloud.y + cloud.height, // 記錄cloud底部位置
+                    startTime: Date.now(),
+                    type: 'lightning'
+                };
+
+                this.lightnings.push(lightning);
+                console.log('⚡ 新閃電2產生！位置:', { x: lightningX, y: lightning.y, cloud: cloud.type });
+            }
+
+            // 檢查與主角的碰撞
+            checkCollisions(player) {
+                if (!this.isActive) return false;
+
+                const currentTime = Date.now();
+                
+                // 檢查是否在冷卻期內
+                if (currentTime - this.playerLastHitTime < this.playerHitCooldown) {
+                    return false;
+                }
+
+                let hit = false;
+                this.lightnings.forEach(lightning => {
+                    if (player.x < lightning.x + lightning.width &&
+                        player.x + player.width > lightning.x &&
+                        player.y < lightning.y + lightning.height &&
+                        player.y + player.height > lightning.y) {
+                        
+                        hit = true;
+                        this.playerLastHitTime = currentTime; // 記錄被擊中時間
+                        console.log('⚡ 主角被閃電2擊中！HP:', player.health);
+                    }
+                });
+
+                return hit;
+            }
+
+            // 繪製閃電
+            draw(ctx, camera, GAME_WIDTH, GAME_HEIGHT) {
+                if (!this.isActive) return;
+
+                this.lightnings.forEach(lightning => {
+                    const x = Math.floor(lightning.x - camera.x);
+                    const y = Math.floor(lightning.y - camera.y);
+                    
+                    // 檢查是否在畫面內
+                    if (x + lightning.width >= 0 && x <= GAME_WIDTH &&
+                        y + lightning.height >= 0 && y <= GAME_HEIGHT) {
+                        
+                        if (this.imagesLoaded && this.images['lightning']) {
+                            ctx.save();
+                            ctx.imageSmoothingEnabled = false;
+                            ctx.drawImage(this.images['lightning'], x, y, lightning.width, lightning.height);
+                            ctx.restore();
+                        } else {
+                            // 如果圖片未載入，繪製預設的閃電形狀
+                            ctx.fillStyle = '#FFFF00';
+                            ctx.fillRect(x, y, lightning.width, lightning.height);
+                        }
+                    }
+                });
+            }
+
+            // 重置
+            reset() {
+                this.lightnings = [];
+                this.isActive = false;
+                this.lastLightningTime = 0;
+                this.cloudLastLightningTime = {};
+                this.playerLastHitTime = 0;
+            }
+        }
+
+        // ===============================
+        // Cloud 雲朵模組 (House-3)
         // ===============================
         class CloudManager {
             constructor() {
@@ -2818,6 +2924,255 @@
                 
                 // 檢查主角是否走到house-3
                 if (player.x >= house3X && player.x <= house3X + house3Width) {
+                    this.startAnimation();
+                }
+            }
+        }
+
+        // ===============================
+        // Cloud 雲朵模組 (House-7)
+        // ===============================
+        class CloudManager2 {
+            constructor() {
+                this.clouds = [];
+                this.imagesLoaded = false;
+                this.images = {};
+                this.animationStarted = false;
+                this.startTime = null;
+                this.cloud1StartTime = null;
+                this.cloud2StartTime = null;
+                this.cloud3StartTime = null;
+                this.animationDuration = 1000; // 1秒滑入動畫
+                this.cloudDelay = 300; // 0.3秒延遲
+            }
+
+            // 載入Cloud圖片
+            loadImages() {
+                const cloudTypes = ['cloud-1', 'cloud-2', 'cloud-3'];
+                let loadedCount = 0;
+
+                cloudTypes.forEach(type => {
+                    const img = new Image();
+                    img.onload = () => {
+                        this.images[type] = img;
+                        loadedCount++;
+                        if (loadedCount === cloudTypes.length) {
+                            this.imagesLoaded = true;
+                            console.log('☁️ Cloud2圖片載入完成');
+                        }
+                    };
+                    img.onerror = () => {
+                        console.log(`❌ Cloud2圖片載入失敗: ${type}`);
+                        loadedCount++;
+                        if (loadedCount === cloudTypes.length) {
+                            this.imagesLoaded = true;
+                        }
+                    };
+                    img.src = `${type}.svg`;
+                });
+            }
+
+            // 創建Cloud雲朵 (House-7版本)
+            createClouds(house7X, house7Width, GAME_HEIGHT) {
+                // 計算Cloud尺寸
+                const cloud1HeightRatio = 96 / 512; // 96像素高度在512背景中的比例 (18.75%)
+                const cloud2HeightRatio = 79 / 512; // 79像素高度在512背景中的比例 (15.43%)
+                const cloud3HeightRatio = 77 / 512; // 77像素高度在512背景中的比例 (15.04%)
+
+                const cloud1Height = Math.floor(GAME_HEIGHT * cloud1HeightRatio);
+                const cloud2Height = Math.floor(GAME_HEIGHT * cloud2HeightRatio);
+                const cloud3Height = Math.floor(GAME_HEIGHT * cloud3HeightRatio);
+
+                // 計算Cloud寬度（保持原始比例）
+                let cloud1Width, cloud2Width, cloud3Width;
+
+                // 使用roadOriginalSizes來獲取原始比例
+                if (roadOriginalSizes['cloud-1']) {
+                    const originalSize = roadOriginalSizes['cloud-1'];
+                    const originalRatio = originalSize.width / originalSize.height;
+                    cloud1Width = Math.floor(cloud1Height * originalRatio);
+                } else if (this.images['cloud-1'] && this.images['cloud-1'].complete) {
+                    const ratio = this.images['cloud-1'].naturalWidth / this.images['cloud-1'].naturalHeight;
+                    cloud1Width = Math.floor(cloud1Height * ratio);
+                } else {
+                    cloud1Width = cloud1Height; // 預設為正方形
+                }
+
+                if (roadOriginalSizes['cloud-2']) {
+                    const originalSize = roadOriginalSizes['cloud-2'];
+                    const originalRatio = originalSize.width / originalSize.height;
+                    cloud2Width = Math.floor(cloud2Height * originalRatio);
+                } else if (this.images['cloud-2'] && this.images['cloud-2'].complete) {
+                    const ratio = this.images['cloud-2'].naturalWidth / this.images['cloud-2'].naturalHeight;
+                    cloud2Width = Math.floor(cloud2Height * ratio);
+                } else {
+                    cloud2Width = cloud2Height; // 預設為正方形
+                }
+
+                if (roadOriginalSizes['cloud-3']) {
+                    const originalSize = roadOriginalSizes['cloud-3'];
+                    const originalRatio = originalSize.width / originalSize.height;
+                    cloud3Width = Math.floor(cloud3Height * originalRatio);
+                } else if (this.images['cloud-3'] && this.images['cloud-3'].complete) {
+                    const ratio = this.images['cloud-3'].naturalWidth / this.images['cloud-3'].naturalHeight;
+                    cloud3Width = Math.floor(cloud3Height * ratio);
+                } else {
+                    cloud3Width = cloud3Height; // 預設為正方形
+                }
+
+                // 計算Cloud位置 (House-7版本)
+                const cloud1TopDistanceRatio = 15 / 512; // 15像素距離在512背景中的比例 (2.93%)
+                const cloud2TopDistanceRatio = 19 / 512; // 19像素距離在512背景中的比例 (3.71%)
+                const cloud3TopDistanceRatio = 15 / 512; // 15像素距離在512背景中的比例 (2.93%)
+                const cloud2LeftDistanceRatio = 14 / 512; // 14像素距離在512背景中的比例 (2.73%)
+                const cloud3LeftDistanceRatio = 48 / 512; // 48像素距離在512背景中的比例 (9.38%)
+
+                const cloud1TopDistance = Math.floor(GAME_HEIGHT * cloud1TopDistanceRatio);
+                const cloud2TopDistance = Math.floor(GAME_HEIGHT * cloud2TopDistanceRatio);
+                const cloud3TopDistance = Math.floor(GAME_HEIGHT * cloud3TopDistanceRatio);
+                const cloud2LeftDistance = Math.floor(GAME_HEIGHT * cloud2LeftDistanceRatio);
+                const cloud3LeftDistance = Math.floor(GAME_HEIGHT * cloud3LeftDistanceRatio);
+
+                // 計算Cloud的最終位置 (House-7版本) - 左邊貼齊house-7右邊
+                const cloud1FinalX = house7X + house7Width; // cloud1左邊貼齊house-7右邊
+                const cloud1FinalY = cloud1TopDistance;
+                const cloud2FinalX = cloud1FinalX + cloud1Width + cloud2LeftDistance;
+                const cloud2FinalY = cloud2TopDistance;
+                const cloud3FinalX = cloud2FinalX + cloud2Width + cloud3LeftDistance;
+                const cloud3FinalY = cloud3TopDistance;
+
+                // 創建Cloud物件（初始位置在畫面外）
+                this.clouds = [
+                    {
+                        x: cloud1FinalX,
+                        y: -cloud1Height, // 初始在畫面外
+                        width: cloud1Width,
+                        height: cloud1Height,
+                        finalY: cloud1FinalY,
+                        type: 'cloud-1',
+                        isAnimating: false
+                    },
+                    {
+                        x: cloud2FinalX,
+                        y: -cloud2Height, // 初始在畫面外
+                        width: cloud2Width,
+                        height: cloud2Height,
+                        finalY: cloud2FinalY,
+                        type: 'cloud-2',
+                        isAnimating: false
+                    },
+                    {
+                        x: cloud3FinalX,
+                        y: -cloud3Height, // 初始在畫面外
+                        width: cloud3Width,
+                        height: cloud3Height,
+                        finalY: cloud3FinalY,
+                        type: 'cloud-3',
+                        isAnimating: false
+                    }
+                ];
+
+                console.log('☁️ Cloud2模組創建完成:', this.clouds);
+            }
+
+            // 啟動動畫
+            startAnimation() {
+                if (this.animationStarted) return;
+                
+                this.animationStarted = true;
+                this.startTime = Date.now();
+                this.cloud1StartTime = this.startTime;
+                this.cloud2StartTime = this.startTime + this.cloudDelay;
+                this.cloud3StartTime = this.startTime + (this.cloudDelay * 2);
+                
+                console.log('☁️ Cloud2動畫啟動！');
+                
+                // 啟動閃電系統
+                lightningManager2.startLightning();
+            }
+
+            // 更新動畫
+            update() {
+                if (!this.animationStarted || !this.clouds || this.clouds.length === 0) return;
+
+                const currentTime = Date.now();
+
+                // 更新cloud-1
+                if (this.clouds[0] && currentTime >= this.cloud1StartTime) {
+                    this.clouds[0].isAnimating = true;
+                    const elapsed = currentTime - this.cloud1StartTime;
+                    const progress = Math.min(elapsed / this.animationDuration, 1);
+                    
+                    // ease out動畫
+                    const easeOutProgress = 1 - Math.pow(1 - progress, 3);
+                    this.clouds[0].y = -this.clouds[0].height + (easeOutProgress * (this.clouds[0].finalY + this.clouds[0].height));
+                }
+
+                // 更新cloud-2
+                if (this.clouds[1] && currentTime >= this.cloud2StartTime) {
+                    this.clouds[1].isAnimating = true;
+                    const elapsed = currentTime - this.cloud2StartTime;
+                    const progress = Math.min(elapsed / this.animationDuration, 1);
+                    
+                    const easeOutProgress = 1 - Math.pow(1 - progress, 3);
+                    this.clouds[1].y = -this.clouds[1].height + (easeOutProgress * (this.clouds[1].finalY + this.clouds[1].height));
+                }
+
+                // 更新cloud-3
+                if (this.clouds[2] && currentTime >= this.cloud3StartTime) {
+                    this.clouds[2].isAnimating = true;
+                    const elapsed = currentTime - this.cloud3StartTime;
+                    const progress = Math.min(elapsed / this.animationDuration, 1);
+                    
+                    const easeOutProgress = 1 - Math.pow(1 - progress, 3);
+                    this.clouds[2].y = -this.clouds[2].height + (easeOutProgress * (this.clouds[2].finalY + this.clouds[2].height));
+                }
+            }
+
+            // 繪製Cloud
+            draw(ctx, camera, GAME_WIDTH, GAME_HEIGHT) {
+                if (!this.clouds || this.clouds.length === 0) return;
+                
+                this.clouds.forEach(cloud => {
+                    if (cloud && cloud.isAnimating) {
+                        const x = Math.floor(cloud.x - camera.x);
+                        const y = Math.floor(cloud.y - camera.y);
+                        
+                        // 檢查是否在畫面內
+                        if (x + cloud.width >= 0 && x <= GAME_WIDTH &&
+                            y + cloud.height >= 0 && y <= GAME_HEIGHT) {
+                            
+                            if (this.imagesLoaded && this.images[cloud.type]) {
+                                ctx.save();
+                                ctx.imageSmoothingEnabled = false;
+                                ctx.drawImage(this.images[cloud.type], x, y, cloud.width, cloud.height);
+                                ctx.restore();
+                            } else {
+                                // 如果圖片未載入，繪製預設的雲朵形狀
+                                ctx.fillStyle = '#ffffff';
+                                ctx.fillRect(x, y, cloud.width, cloud.height);
+                            }
+                        }
+                    }
+                });
+            }
+
+            // 重置
+            reset() {
+                this.clouds = [];
+                this.animationStarted = false;
+                this.startTime = null;
+                this.cloud1StartTime = null;
+                this.cloud2StartTime = null;
+                this.cloud3StartTime = null;
+            }
+
+            // 檢查是否應該啟動動畫
+            checkTrigger(player, house7X, house7Width) {
+                if (this.animationStarted) return;
+                
+                // 檢查主角是否走到house-7
+                if (player.x >= house7X && player.x <= house7X + house7Width) {
                     this.startAnimation();
                 }
             }
@@ -3298,7 +3653,9 @@
         // 創建全域HP Logo管理器
         const hpLogoManager = new HpLogoManager();
         const cloudManager = new CloudManager();
+        const cloudManager2 = new CloudManager2();
         const lightningManager = new LightningManager();
+        const lightningManager2 = new LightningManager2();
 
         // HP Logo圖片載入已移至HpLogoManager模組
 
