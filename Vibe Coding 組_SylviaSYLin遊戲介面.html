@@ -243,6 +243,16 @@
         let victoryDuration = 2000;
         let gameLoopId = null;
         
+        // 音樂管理系統
+        let gameBGM = null;
+        let musicVolume = 0.4; // 默認音量40%
+        let fadeOutDuration = 2000; // 淡出持續時間2秒
+        let fadeInterval = null;
+        
+        // 按鈕音效管理
+        let buttonAudio = null;
+        let buttonAudioVolume = 0.5; // 按鈕音效音量50%
+        
         // 背景圖片變數
         let backgroundImage = null;
         let backgroundWidth = 0;
@@ -493,6 +503,10 @@
             setupEventListeners();
             updateUI();
             setupStory1Image(); // 設置 story-1 圖片
+            
+            // 初始化音效系統
+            initButtonAudio();
+            
             gameLoop(); // 啟動遊戲循環以顯示前言背景
         }
         
@@ -1879,15 +1893,7 @@
                         event.stopPropagation();
                         
                         // 播放按鈕點擊音效
-                        try {
-                            const buttonAudio = new Audio('sound/button.mp3');
-                            buttonAudio.volume = 0.5; // 設定音量為50%
-                            buttonAudio.play().catch(e => {
-                                console.log('音效播放失敗:', e);
-                            });
-                        } catch (error) {
-                            console.log('音效載入失敗:', error);
-                        }
+                        playButtonAudio();
                         
                         // 防止快速連續點擊
                         if (isProcessingClick) {
@@ -2023,10 +2029,99 @@
             }
         }
         
+        // 按鈕音效管理函數
+        function initButtonAudio() {
+            try {
+                buttonAudio = new Audio('sound/button.mp3');
+                buttonAudio.volume = buttonAudioVolume;
+                console.log('🔊 按鈕音效初始化完成（音量：' + (buttonAudioVolume * 100) + '%）');
+            } catch (error) {
+                console.log('🚫 按鈕音效初始化失敗:', error);
+            }
+        }
+        
+        function playButtonAudio() {
+            if (buttonAudio) {
+                buttonAudio.currentTime = 0; // 重置播放位置
+                buttonAudio.volume = buttonAudioVolume; // 確保音量正確
+                buttonAudio.play().catch(e => {
+                    console.log('🚫 按鈕音效播放失敗:', e);
+                });
+            }
+        }
+        
+        // 音樂管理函數
+        function initGameBGM() {
+            try {
+                gameBGM = new Audio('sound/game-bgm.mp3');
+                gameBGM.volume = musicVolume; // 直接設定為完整音量
+                gameBGM.loop = true; // 無限循環
+                console.log('🎵 背景音樂初始化完成（音量：' + (musicVolume * 100) + '%）');
+            } catch (error) {
+                console.log('🚫 背景音樂初始化失敗:', error);
+            }
+        }
+        
+        function playGameBGM() {
+            if (gameBGM) {
+                gameBGM.currentTime = 0; // 從頭開始播放
+                gameBGM.volume = musicVolume; // 直接設定為完整音量
+                gameBGM.play().then(() => {
+                    console.log('🎵 背景音樂開始播放（音量：' + (musicVolume * 100) + '%）');
+                }).catch(e => {
+                    console.log('🚫 背景音樂播放失敗:', e);
+                });
+            }
+        }
+        
+        function stopGameBGM() {
+            if (gameBGM) {
+                gameBGM.pause();
+                gameBGM.currentTime = 0;
+                console.log('🎵 背景音樂已停止');
+            }
+        }
+        
+        function fadeOutGameBGM(callback) {
+            if (!gameBGM || gameBGM.paused) {
+                if (callback) callback();
+                return;
+            }
+            
+            // 清除任何現有的淡出效果
+            if (fadeInterval) {
+                clearInterval(fadeInterval);
+            }
+            
+            const startVolume = gameBGM.volume;
+            const fadeStep = startVolume / (fadeOutDuration / 50); // 每50ms減少的音量
+            
+            console.log('🎵 開始音樂淡出效果');
+            
+            fadeInterval = setInterval(() => {
+                if (gameBGM.volume > fadeStep) {
+                    gameBGM.volume -= fadeStep;
+                } else {
+                    gameBGM.volume = 0;
+                    gameBGM.pause();
+                    clearInterval(fadeInterval);
+                    fadeInterval = null;
+                    console.log('🎵 音樂淡出完成');
+                    if (callback) callback();
+                }
+            }, 50);
+        }
+        
         // 開始遊戲函數
         function startGame() {
             document.getElementById('introModal').style.display = 'none';
             gameState = 'playing';
+            
+            // 初始化並播放背景音樂
+            initGameBGM();
+            setTimeout(() => {
+                playGameBGM();
+            }, 100); // 稍微延遲以確保音頻初始化完成
         }
         
         function update() {
@@ -2327,6 +2422,9 @@
             victoryStartTime = Date.now();
             victoryDuration = 2000; // 2秒變黑時間
             console.log('🎬 開始勝利序列：畫面變黑');
+            
+            // 音樂與畫面一起淡出
+            fadeOutGameBGM();
         }
 
         function checkEndpoint() {
@@ -2376,19 +2474,24 @@
             }
             
             gameState = 'ended';
-            const modal = document.getElementById('endingModal');
-            const title = document.getElementById('endingTitle');
-            const text = document.getElementById('endingText');
             
-            if (success) {
-                title.textContent = '🎉 任務成功！';
-                text.innerHTML = `恭喜你成功逃出了危險！<br><br>你發現的秘密將改變整個世界...<br><br>在你的努力下，人類終於找到了<br>突破科技極限的關鍵。<br><br>新的時代即將來臨！`;
-            } else {
-                title.textContent = '💀 任務失敗';
-                text.innerHTML = `你在逃脫過程中不幸犧牲了...<br><br>但你的勇氣激勵了其他研究員，<br><br>他們將繼承你的意志，<br>繼續尋找真相。<br><br>你的犧牲不會白費！`;
-            }
-            
-            modal.style.display = 'flex';
+            // 音樂淡出效果
+            fadeOutGameBGM(() => {
+                // 淡出完成後顯示結束畫面
+                const modal = document.getElementById('endingModal');
+                const title = document.getElementById('endingTitle');
+                const text = document.getElementById('endingText');
+                
+                if (success) {
+                    title.textContent = '🎉 任務成功！';
+                    text.innerHTML = `恭喜你成功逃出了危險！<br><br>你發現的秘密將改變整個世界...<br><br>在你的努力下，人類終於找到了<br>突破科技極限的關鍵。<br><br>新的時代即將來臨！`;
+                } else {
+                    title.textContent = '💀 任務失敗';
+                    text.innerHTML = `你在逃脫過程中不幸犧牲了...<br><br>但你的勇氣激勵了其他研究員，<br><br>他們將繼承你的意志，<br>繼續尋找真相。<br><br>你的犧牲不會白費！`;
+                }
+                
+                modal.style.display = 'flex';
+            });
         }
         
         function restartGame() {
@@ -2462,6 +2565,14 @@
             keys = {};
             
             updateUI();
+            
+            // 停止背景音樂
+            stopGameBGM();
+            // 清除淡出效果
+            if (fadeInterval) {
+                clearInterval(fadeInterval);
+                fadeInterval = null;
+            }
             
             document.getElementById('endingModal').style.display = 'none';
             document.getElementById('introModal').style.display = 'flex';
