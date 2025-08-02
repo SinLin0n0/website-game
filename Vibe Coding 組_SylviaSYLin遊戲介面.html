@@ -253,6 +253,11 @@
         let buttonAudio = null;
         let buttonAudioVolume = 0.5; // 按鈕音效音量50%
         
+        // 跳躍音效管理
+        let jumpAudio = null;
+        let jumpAudioVolume = 0.6; // 跳躍音效音量60%
+        let lastJumpAnimation = null; // 追蹤上一次的跳躍動畫狀態
+        
         // 背景圖片變數
         let backgroundImage = null;
         let backgroundWidth = 0;
@@ -506,6 +511,7 @@
             
             // 初始化音效系統
             initButtonAudio();
+            initJumpAudio();
             
             gameLoop(); // 啟動遊戲循環以顯示前言背景
         }
@@ -2050,6 +2056,26 @@
             }
         }
         
+        function initJumpAudio() {
+            try {
+                jumpAudio = new Audio('sound/jump.mp3');
+                jumpAudio.volume = jumpAudioVolume;
+                console.log('🔊 跳躍音效初始化完成（音量：' + (jumpAudioVolume * 100) + '%）');
+            } catch (error) {
+                console.log('🚫 跳躍音效初始化失敗:', error);
+            }
+        }
+        
+        function playJumpAudio() {
+            if (jumpAudio) {
+                jumpAudio.currentTime = 0; // 重置播放位置
+                jumpAudio.volume = jumpAudioVolume; // 確保音量正確
+                jumpAudio.play().catch(e => {
+                    console.log('🚫 跳躍音效播放失敗:', e);
+                });
+            }
+        }
+        
         // 音樂管理函數
         function initGameBGM() {
             try {
@@ -2230,6 +2256,11 @@
             
             // 如果動畫狀態改變，重置動畫幀索引和時間
             if (newAnimation !== currentAnimation) {
+                // 檢查是否從 jumpPrepare 切換到 jumping（顯示 jump-2 時播放音效）
+                if (currentAnimation === 'jumpPrepare' && newAnimation === 'jumping') {
+                    playJumpAudio();
+                }
+                
                 currentAnimation = newAnimation;
                 animationFrame = 0; // 重置到第一幀
                 lastFrameTime = Date.now(); // 重置時間，避免時間混亂
@@ -3760,6 +3791,9 @@
                                     jumpState = 'jumping';
                                     jumpStartTime = Date.now();
                                     console.log('🏃‍♂️ 彈簧彈開！玩家被彈起，切換到jump-2');
+                                    
+                                    // 播放跳躍音效
+                                    playJumpAudio();
                                 }
                             }
                             break;
