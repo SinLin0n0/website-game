@@ -387,6 +387,11 @@ function endGame(success) {
     
     gameState = 'ended';
     
+    // 停止跑步音效（如果函數存在）
+    if (typeof stopRunningAudio === 'function') {
+        stopRunningAudio();
+    }
+    
     if (success) {
         const modal = document.getElementById('endingModal');
         const title = document.getElementById('endingTitle');

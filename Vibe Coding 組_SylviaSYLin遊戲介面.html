@@ -2008,7 +2008,7 @@
                         
                         // 延遲重新開始以讓音效播放
                         setTimeout(() => {
-                            restartGame();
+                            directRestartGame();
                             isProcessingClick = false;
                         }, 200);
                     });
@@ -2035,6 +2035,9 @@
             // 停止背景音樂
             stopGameBGM();
             
+            // 停止跑步音效
+            stopRunningAudio();
+            
             // 清除淡出效果
             if (fadeInterval) {
                 clearInterval(fadeInterval);
@@ -2048,7 +2051,7 @@
             // 設置失敗畫面
             setupFailureScreen();
             
-            console.log('💀 失敗畫面顯示');
+            console.log('💀 失敗畫面顯示，所有音效已停止');
         }
         
         // 設置 story-1 圖片尺寸和 next-btn 位置
@@ -2889,6 +2892,9 @@
             
             gameState = 'ended';
             
+            // 停止跑步音效（無論成功或失敗）
+            stopRunningAudio();
+            
             if (success) {
                 // 音樂淡出效果
                 fadeOutGameBGM(() => {
@@ -2989,6 +2995,101 @@
             document.getElementById('endingModal').style.display = 'none';
             document.getElementById('failureModal').style.display = 'none';
             document.getElementById('introModal').style.display = 'flex';
+        }
+        
+        // 直接重置遊戲（不回到前言）
+        function directRestartGame() {
+            // 停止遊戲循環
+            if (gameLoopId) {
+                cancelAnimationFrame(gameLoopId);
+                gameLoopId = null;
+            }
+            
+            gameState = 'playing'; // 直接進入遊戲狀態
+            
+            // 動態計算角色大小
+            const playerSize = calculatePlayerSize();
+            
+            // 完全重置玩家狀態
+            player = {
+                x: 100, y: Math.floor(GAME_HEIGHT * 0.5), 
+                width: playerSize.width, height: playerSize.height,
+                velocityX: 0, velocityY: 0, onGround: false,
+                health: 100, maxHealth: 100,
+                shieldActive: false, shieldHits: 0,
+                facingRight: true,
+                alpha: 1,
+                controlDisabled: false
+            };
+            
+            // 重置動畫狀態
+            currentAnimation = 'idle';
+            animationFrame = 0;
+            lastFrameTime = Date.now();
+            
+            // 重置勝利序列
+            victoryStartTime = null;
+            
+            // 重置跳躍狀態
+            jumpState = 'none';
+            jumpStartTime = 0;
+            
+            // 重置攝影機
+            camera = { x: 0, y: 0 };
+            
+            // 重置世界
+            createWorld();
+            
+            // 重置庫存
+            inventory = { healthPotions: 2, shields: 1 };
+            
+            // 重置HP Logo收集計數和狀態
+            hpLogoManager.reset();
+            
+            // 重置road-short-1和road-short-2掉落狀態
+            world.roads.forEach(road => {
+                if (road.type === 'road-short-1' || road.type === 'road-short-2') {
+                    road.isFalling = false;
+                    road.fallStartTime = 0;
+                    road.y = road.originalY;
+                }
+            });
+            
+            // 重置所有管理器狀態
+            springManager.reset();
+            cloudManager.reset();
+            cloudManager2.reset();
+            lightningManager.reset();
+            lightningManager2.reset();
+            heartManager.reset();
+            
+            // 清除所有按鍵狀態
+            keys = {};
+            
+            updateUI();
+            
+            // 停止當前背景音樂並清除淡出效果
+            stopGameBGM();
+            if (fadeInterval) {
+                clearInterval(fadeInterval);
+                fadeInterval = null;
+            }
+            
+            // 關閉所有模態框
+            document.getElementById('endingModal').style.display = 'none';
+            document.getElementById('failureModal').style.display = 'none';
+            document.getElementById('introModal').style.display = 'none';
+            
+            // 重新初始化並播放背景音樂
+            initGameBGM();
+            setTimeout(() => {
+                playGameBGM();
+            }, 100);
+            
+            // 重新開始遊戲循環
+            gameLoop();
+            
+            console.log('🔄 遊戲直接重置完成，從起點開始新遊戲');
         }
         
         function render() {
