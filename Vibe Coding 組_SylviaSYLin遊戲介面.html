@@ -2299,9 +2299,10 @@
         function updatePlayer() {
             const wasMoving = Math.abs(player.velocityX) > 0.1;
             
-            // 如果主角控制被禁用，停止移動
+            // 如果主角控制被禁用，停止移動和跑步音效
             if (player.controlDisabled) {
                 player.velocityX *= 0.9; // 逐漸停止
+                stopRunningAudio(); // 停止跑步音效
                 return;
             }
             
