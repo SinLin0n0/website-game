@@ -1171,6 +1171,551 @@
             }
 
             console.log('🏗️ 5個road-short-1創建完成:', world.roads.filter(r => r.type === 'road-short-1'));
+
+            // 創建road-5
+            const road5HeightRatio = 32 / 512; // 32像素高度在512背景中的比例，與road-3和road-4相同 (6.25%)
+            let road5Width, road5Height;
+            
+            if (roadOriginalSizes['road-5']) {
+                const originalSize = roadOriginalSizes['road-5'];
+                const originalRatio = originalSize.width / originalSize.height;
+                
+                // 根據當前遊戲高度計算road-5高度
+                road5Height = Math.floor(GAME_HEIGHT * road5HeightRatio);
+                // 根據原始比例計算寬度
+                road5Width = Math.floor(road5Height * originalRatio);
+                
+                console.log(`🎯 Road-5動態尺寸計算: 遊戲高度${GAME_HEIGHT} → road-5高度${road5Height}, 寬度${road5Width} (原始比例${originalRatio.toFixed(2)})`);
+            } else {
+                // 如果沒有原始尺寸，使用預設比例，假設寬高比為4:1
+                road5Height = Math.floor(GAME_HEIGHT * road5HeightRatio);
+                road5Width = Math.floor(road5Height * 4); // 預設比例
+                
+                console.log(`⚠️ Road-5使用預設比例: 高度${road5Height}, 寬度${road5Width}`);
+            }
+
+            // 計算road-5位置
+            const road5BottomDistanceRatio = 58 / 512; // 58像素距離在512背景中的比例 (11.33%)
+            const road5LeftDistanceRatio = 24 / 512; // 24像素距離在512背景中的比例 (4.69%)
+            
+            const road5BottomDistance = Math.floor(GAME_HEIGHT * road5BottomDistanceRatio);
+            const road5LeftDistance = Math.floor(GAME_HEIGHT * road5LeftDistanceRatio);
+            
+            // 找到最後一個road-short-1的位置
+            const lastRoadShort1 = world.roads.find(road => road.type === 'road-short-1' && road.id === 'road-short-1-5');
+            const road5X = lastRoadShort1.x + lastRoadShort1.width + road5LeftDistance;
+            const road5Y = GAME_HEIGHT - road5BottomDistance - road5Height;
+
+            // 添加road-5到world.roads
+            world.roads.push({
+                x: road5X,
+                y: road5Y,
+                width: road5Width,
+                height: road5Height,
+                type: 'road-5'
+            });
+
+            console.log('🏗️ Road-5創建完成:', { x: road5X, y: road5Y, width: road5Width, height: road5Height });
+
+            // 創建house-6
+            const house6HeightRatio = 210 / 512; // 210像素高度在512背景中的比例 (41.02%)
+            let house6Width, house6Height;
+            
+            if (roadOriginalSizes['house-6']) {
+                const originalSize = roadOriginalSizes['house-6'];
+                const originalRatio = originalSize.width / originalSize.height;
+                
+                // 根據當前遊戲高度計算house-6高度
+                house6Height = Math.floor(GAME_HEIGHT * house6HeightRatio);
+                // 根據原始比例計算寬度
+                house6Width = Math.floor(house6Height * originalRatio);
+                
+                console.log(`🎯 House-6動態尺寸計算: 遊戲高度${GAME_HEIGHT} → house-6高度${house6Height}, 寬度${house6Width} (原始比例${originalRatio.toFixed(2)})`);
+            } else {
+                // 如果沒有原始尺寸，使用預設比例，假設寬高比為4:3
+                house6Height = Math.floor(GAME_HEIGHT * house6HeightRatio);
+                house6Width = Math.floor(house6Height * (4/3)); // 預設比例
+                
+                console.log(`⚠️ House-6使用預設比例: 高度${house6Height}, 寬度${house6Width}`);
+            }
+
+            // 計算house-6位置
+            const house6LeftDistanceRatio = 50 / 512; // 50像素距離在512背景中的比例 (9.77%)
+            const house6LeftDistance = Math.floor(GAME_HEIGHT * house6LeftDistanceRatio);
+            
+            const house6X = road5X + house6LeftDistance; // house-6左邊與road-5左邊距離50像素
+            const house6Y = road5Y - house6Height; // house-6底部對齊road-5頂部
+
+            // 添加house-6到world.roads
+            world.roads.push({
+                x: house6X,
+                y: house6Y,
+                width: house6Width,
+                height: house6Height,
+                type: 'house-6'
+            });
+
+            console.log('🏠 House-6創建完成:', { x: house6X, y: house6Y, width: house6Width, height: house6Height });
+
+            // 使用Spring模組創建第二個彈簧
+            const spring2LeftDistanceRatio = 108 / 512; // 108像素距離在512背景中的比例 (21.09%)
+            const spring2LeftDistance = Math.floor(GAME_HEIGHT * spring2LeftDistanceRatio);
+            
+            const spring2X = house6X + house6Width + spring2LeftDistance; // spring左邊距離house-6右邊108像素
+            const spring2 = springManager.createSpring(spring2X, 0, player.width);
+            spring2.y = road5Y - spring2.height; // spring底部貼齊road-5頂部
+            
+            console.log('🏃‍♂️ 第二個Spring創建完成:', { x: spring2X, y: spring2.y, width: spring2.width, height: spring2.height });
+
+            // 在第二個spring上方創建3x3九宮格HP Logo
+            const hpLogoGridTopDistanceRatio = 96 / 512; // 96像素距離在512背景中的比例 (18.75%)
+            const hpLogoGridSpacingRatio = 8 / 512; // 8像素間距在512背景中的比例 (1.56%)
+            
+            const hpLogoGridTopDistance = Math.floor(GAME_HEIGHT * hpLogoGridTopDistanceRatio);
+            const hpLogoGridSpacing = Math.floor(GAME_HEIGHT * hpLogoGridSpacingRatio);
+            
+            // 計算九宮格的中心X位置（與spring垂直置中）
+            const spring2CenterX = spring2X + Math.floor(spring2.width / 2);
+            
+            // 計算第一個HP Logo的位置（九宮格左上角）
+            const hpLogoHeightRatio = 41 / 512; // 41像素高度在512背景中的比例
+            const hpLogoHeight = Math.floor(GAME_HEIGHT * hpLogoHeightRatio);
+            
+            // 根據圖片實際比例計算寬度，如果沒有則假設為正方形
+            let hpLogoWidth;
+            if (hpLogoManager.image && hpLogoManager.image.complete && hpLogoManager.image.naturalWidth > 0) {
+                const originalRatio = hpLogoManager.image.naturalWidth / hpLogoManager.image.naturalHeight;
+                hpLogoWidth = Math.floor(hpLogoHeight * originalRatio);
+            } else {
+                hpLogoWidth = hpLogoHeight; // 預設為正方形
+            }
+            
+            // 計算九宮格的總寬度和高度
+            const gridWidth = (hpLogoWidth * 3) + (hpLogoGridSpacing * 2); // 3個HP Logo + 2個間距
+            const gridHeight = (hpLogoHeight * 3) + (hpLogoGridSpacing * 2); // 3個HP Logo + 2個間距
+            
+            // 計算第一個HP Logo的位置（九宮格左上角）
+            const gridFirstHpLogoX = spring2CenterX - Math.floor(gridWidth / 2);
+            const gridFirstHpLogoY = spring2.y - hpLogoGridTopDistance - gridHeight; // 距離spring頂部96像素
+            
+            // 創建3x3九宮格HP Logo
+            for (let row = 0; row < 3; row++) {
+                for (let col = 0; col < 3; col++) {
+                    const hpLogoX = gridFirstHpLogoX + col * (hpLogoWidth + hpLogoGridSpacing);
+                    const hpLogoY = gridFirstHpLogoY + row * (hpLogoHeight + hpLogoGridSpacing);
+                    
+                    hpLogoManager.hpLogos.push({
+                        x: hpLogoX,
+                        y: hpLogoY,
+                        width: hpLogoWidth,
+                        height: hpLogoHeight,
+                        collected: false,
+                        id: `grid_${row}_${col}`,
+                        type: 'grid'
+                    });
+                }
+            }
+            
+            console.log('🩹 3x3九宮格HP Logo創建完成，位置:', { 
+                centerX: spring2CenterX, 
+                firstX: gridFirstHpLogoX, 
+                firstY: gridFirstHpLogoY,
+                spacing: hpLogoGridSpacing,
+                totalCount: hpLogoManager.hpLogos.length
+            });
+
+            // 創建house-7
+            const house7HeightRatio = 233 / 512; // 233像素高度在512背景中的比例 (45.51%)
+            let house7Width, house7Height;
+            
+            if (roadOriginalSizes['house-7']) {
+                const originalSize = roadOriginalSizes['house-7'];
+                const originalRatio = originalSize.width / originalSize.height;
+                
+                // 根據當前遊戲高度計算house-7高度
+                house7Height = Math.floor(GAME_HEIGHT * house7HeightRatio);
+                // 根據原始比例計算寬度
+                house7Width = Math.floor(house7Height * originalRatio);
+                
+                console.log(`🎯 House-7動態尺寸計算: 遊戲高度${GAME_HEIGHT} → house-7高度${house7Height}, 寬度${house7Width} (原始比例${originalRatio.toFixed(2)})`);
+            } else {
+                // 如果沒有原始尺寸，使用預設比例，假設寬高比為4:3
+                house7Height = Math.floor(GAME_HEIGHT * house7HeightRatio);
+                house7Width = Math.floor(house7Height * (4/3)); // 預設比例
+                
+                console.log(`⚠️ House-7使用預設比例: 高度${house7Height}, 寬度${house7Width}`);
+            }
+
+            // 計算house-7位置
+            const house7LeftDistanceRatio = 108 / 512; // 108像素距離在512背景中的比例 (21.09%)
+            const house7LeftDistance = Math.floor(GAME_HEIGHT * house7LeftDistanceRatio);
+            
+            const house7X = spring2X + spring2.width + house7LeftDistance; // house-7左邊與spring右邊距離108像素
+            const house7Y = road5Y - house7Height; // house-7底部對齊road-5頂部
+
+            // 添加house-7到world.roads
+            world.roads.push({
+                x: house7X,
+                y: house7Y,
+                width: house7Width,
+                height: house7Height,
+                type: 'house-7'
+            });
+
+            console.log('🏠 House-7創建完成:', { x: house7X, y: house7Y, width: house7Width, height: house7Height });
+
+            // 創建road-7
+            const road7HeightRatio = 32 / 512; // 32像素高度在512背景中的比例，與road-5相同 (6.25%)
+            let road7Width, road7Height;
+            
+            if (roadOriginalSizes['road-7']) {
+                const originalSize = roadOriginalSizes['road-7'];
+                const originalRatio = originalSize.width / originalSize.height;
+                
+                // 根據當前遊戲高度計算road-7高度
+                road7Height = Math.floor(GAME_HEIGHT * road7HeightRatio);
+                // 根據原始比例計算寬度
+                road7Width = Math.floor(road7Height * originalRatio);
+                
+                console.log(`🎯 Road-7動態尺寸計算: 遊戲高度${GAME_HEIGHT} → road-7高度${road7Height}, 寬度${road7Width} (原始比例${originalRatio.toFixed(2)})`);
+            } else {
+                // 如果沒有原始尺寸，使用預設比例，假設寬高比為4:1
+                road7Height = Math.floor(GAME_HEIGHT * road7HeightRatio);
+                road7Width = Math.floor(road7Height * 4); // 預設比例
+                
+                console.log(`⚠️ Road-7使用預設比例: 高度${road7Height}, 寬度${road7Width}`);
+            }
+
+            // 計算road-7位置
+            const road7BottomDistanceRatio = 120 / 512; // 120像素距離在512背景中的比例 (23.44%)
+            const road7LeftDistanceRatio = 68 / 512; // 68像素距離在512背景中的比例 (13.28%)
+            
+            const road7BottomDistance = Math.floor(GAME_HEIGHT * road7BottomDistanceRatio);
+            const road7LeftDistance = Math.floor(GAME_HEIGHT * road7LeftDistanceRatio);
+            
+            // road-7底部對齊背景底部距離120像素，左邊對齊road-5右邊距離68像素
+            const road7X = road5X + road5Width + road7LeftDistance; // road-7左邊與road-5右邊距離68像素
+            const road7Y = GAME_HEIGHT - road7BottomDistance - road7Height; // road-7底部距離背景底部120像素
+
+            // 添加road-7到world.roads
+            world.roads.push({
+                x: road7X,
+                y: road7Y,
+                width: road7Width,
+                height: road7Height,
+                type: 'road-7'
+            });
+
+            console.log('🏗️ Road-7創建完成:', { x: road7X, y: road7Y, width: road7Width, height: road7Height });
+
+            // 創建road-8
+            const road8HeightRatio = 32 / 512; // 32像素高度在512背景中的比例，與road-5相同 (6.25%)
+            let road8Width, road8Height;
+            
+            if (roadOriginalSizes['road-8']) {
+                const originalSize = roadOriginalSizes['road-8'];
+                const originalRatio = originalSize.width / originalSize.height;
+                
+                // 根據當前遊戲高度計算road-8高度
+                road8Height = Math.floor(GAME_HEIGHT * road8HeightRatio);
+                // 根據原始比例計算寬度
+                road8Width = Math.floor(road8Height * originalRatio);
+                
+                console.log(`🎯 Road-8動態尺寸計算: 遊戲高度${GAME_HEIGHT} → road-8高度${road8Height}, 寬度${road8Width} (原始比例${originalRatio.toFixed(2)})`);
+            } else {
+                // 如果沒有原始尺寸，使用預設比例，假設寬高比為4:1
+                road8Height = Math.floor(GAME_HEIGHT * road8HeightRatio);
+                road8Width = Math.floor(road8Height * 4); // 預設比例
+                
+                console.log(`⚠️ Road-8使用預設比例: 高度${road8Height}, 寬度${road8Width}`);
+            }
+
+            // 計算road-8位置
+            const road8LeftDistanceRatio = 68 / 512; // 68像素距離在512背景中的比例 (13.28%)
+            
+            const road8LeftDistance = Math.floor(GAME_HEIGHT * road8LeftDistanceRatio);
+            
+            // road-8頂部對齊road-5頂部，左邊對齊road-7右邊距離68像素
+            const road8X = road7X + road7Width + road8LeftDistance; // road-8左邊與road-7右邊距離68像素
+            const road8Y = road5Y; // road-8頂部對齊road-5頂部
+
+            // 添加road-8到world.roads
+            world.roads.push({
+                x: road8X,
+                y: road8Y,
+                width: road8Width,
+                height: road8Height,
+                type: 'road-8'
+            });
+
+            console.log('🏗️ Road-8創建完成:', { x: road8X, y: road8Y, width: road8Width, height: road8Height });
+
+            // 創建第一組水平排列的HP Logo（3個，與road-7垂直排列）
+            const road7HpLogoSpacingRatio = 8 / 512; // 8像素間距在512背景中的比例 (1.56%)
+            const road7HpLogoBottomDistanceRatio = 160 / 512; // 124像素距離在512背景中的比例 (24.22%)
+            
+            const road7HpLogoSpacing = Math.floor(GAME_HEIGHT * road7HpLogoSpacingRatio);
+            const road7HpLogoBottomDistance = Math.floor(GAME_HEIGHT * road7HpLogoBottomDistanceRatio);
+            
+            // 計算第一組HP Logo的位置（與road-7垂直排列）
+            const road7CenterX = road7X + Math.floor(road7Width / 2); // road-7中心X位置
+            const road7HpLogoBottomY = road7Y - road7HpLogoBottomDistance; // HP Logo底部位置
+            
+            // 計算第一組HP Logo的起始X位置（置中排列）
+            const road7HpLogoHeightRatio = 41 / 512; // 41像素高度在512背景中的比例
+            const road7HpLogoHeight = Math.floor(GAME_HEIGHT * road7HpLogoHeightRatio);
+            const road7HpLogoWidth = road7HpLogoHeight; // 假設為正方形
+            const road7HpLogosTotalWidth = (road7HpLogoWidth * 3) + (road7HpLogoSpacing * 2); // 3個HP Logo + 2個間距
+            const road7HpLogoStartX = road7CenterX - Math.floor(road7HpLogosTotalWidth / 2); // 置中排列的起始X位置
+            
+            // 創建第一組3個水平排列的HP Logo
+            hpLogoManager.createHorizontalHpLogos(road7HpLogoStartX, road7HpLogoBottomY, 3, road7HpLogoSpacing, GAME_HEIGHT);
+            
+            console.log('🩹 第一組HP Logo創建完成（3個，與road-7垂直排列）');
+
+            // 創建第二組水平排列的HP Logo（6個，在road-8上方）
+            const road8HpLogoSpacingRatio = 8 / 512; // 8像素間距在512背景中的比例 (1.56%)
+            const road8HpLogoLeftDistanceRatio = 78 / 512; // 78像素距離在512背景中的比例 (15.23%)
+            
+            const road8HpLogoSpacing = Math.floor(GAME_HEIGHT * road8HpLogoSpacingRatio);
+            const road8HpLogoLeftDistance = Math.floor(GAME_HEIGHT * road8HpLogoLeftDistanceRatio);
+            
+            // 計算第二組HP Logo的位置（在road-8上方）
+            const road8HpLogoX = road8X + road8HpLogoLeftDistance; // HP Logo左邊位置
+            const road8HpLogoHeightRatio = 41 / 512; // 41像素高度在512背景中的比例
+            const road8HpLogoHeight = Math.floor(GAME_HEIGHT * road8HpLogoHeightRatio);
+            const road8HpLogoY = road8Y - road8HpLogoHeight; // HP Logo底部與road-8頂部貼齊
+            
+            // 創建第二組6個水平排列的HP Logo
+            hpLogoManager.createHorizontalHpLogos(road8HpLogoX, road8HpLogoY, 6, road8HpLogoSpacing, GAME_HEIGHT);
+            
+            console.log('🩹 第二組HP Logo創建完成（6個，在road-8上方）');
+
+            // 創建house-8
+            const house8HeightRatio = 162 / 512; // 162像素高度在512背景中的比例 (31.64%)
+            let house8Width, house8Height;
+            
+            if (roadOriginalSizes['house-8']) {
+                const originalSize = roadOriginalSizes['house-8'];
+                const originalRatio = originalSize.width / originalSize.height;
+                
+                // 根據當前遊戲高度計算house-8高度
+                house8Height = Math.floor(GAME_HEIGHT * house8HeightRatio);
+                // 根據原始比例計算寬度
+                house8Width = Math.floor(house8Height * originalRatio);
+                
+                console.log(`🎯 House-8動態尺寸計算: 遊戲高度${GAME_HEIGHT} → house-8高度${house8Height}, 寬度${house8Width} (原始比例${originalRatio.toFixed(2)})`);
+            } else {
+                // 如果沒有原始尺寸，使用預設比例，假設寬高比為4:3
+                house8Height = Math.floor(GAME_HEIGHT * house8HeightRatio);
+                house8Width = Math.floor(house8Height * (4/3)); // 預設比例
+                
+                console.log(`⚠️ House-8使用預設比例: 高度${house8Height}, 寬度${house8Width}`);
+            }
+
+            // 計算house-8位置
+            const house8LeftDistanceRatio = 170 / 512; // 170像素距離在512背景中的比例 (33.20%)
+            const house8LeftDistance = Math.floor(GAME_HEIGHT * house8LeftDistanceRatio);
+            
+            const house8X = road8X + house8LeftDistance; // house-8左邊與road-8左邊距離170像素
+            const house8Y = road8Y - house8Height; // house-8底部對齊road-8頂部
+
+            // 添加house-8到world.roads
+            world.roads.push({
+                x: house8X,
+                y: house8Y,
+                width: house8Width,
+                height: house8Height,
+                type: 'house-8'
+            });
+
+            console.log('🏠 House-8創建完成:', { x: house8X, y: house8Y, width: house8Width, height: house8Height });
+
+            // 使用Spring模組創建第三個彈簧
+            const spring3LeftDistanceRatio = 132 / 512; // 132像素距離在512背景中的比例 (25.78%)
+            const spring3LeftDistance = Math.floor(GAME_HEIGHT * spring3LeftDistanceRatio);
+            
+            const spring3X = house8X + house8Width + spring3LeftDistance; // spring左邊與house-8右邊距離132像素
+            const spring3 = springManager.createSpring(spring3X, 0, player.width);
+            spring3.y = road8Y - spring3.height; // spring底部對齊road-8頂部
+            
+            console.log('🏃‍♂️ 第三個Spring創建完成:', { x: spring3X, y: spring3.y, width: spring3.width, height: spring3.height });
+
+            // 創建bridge-1
+            const bridge1HeightRatio = 122 / 512; // 122像素高度在512背景中的比例 (23.83%)
+            let bridge1Width, bridge1Height;
+            
+            if (roadOriginalSizes['bridge-1']) {
+                const originalSize = roadOriginalSizes['bridge-1'];
+                const originalRatio = originalSize.width / originalSize.height;
+                
+                // 根據當前遊戲高度計算bridge-1高度
+                bridge1Height = Math.floor(GAME_HEIGHT * bridge1HeightRatio);
+                // 根據原始比例計算寬度
+                bridge1Width = Math.floor(bridge1Height * originalRatio);
+                
+                console.log(`🎯 Bridge-1動態尺寸計算: 遊戲高度${GAME_HEIGHT} → bridge-1高度${bridge1Height}, 寬度${bridge1Width} (原始比例${originalRatio.toFixed(2)})`);
+            } else {
+                // 如果沒有原始尺寸，使用預設比例，假設寬高比為4:1
+                bridge1Height = Math.floor(GAME_HEIGHT * bridge1HeightRatio);
+                bridge1Width = Math.floor(bridge1Height * 4); // 預設比例
+                
+                console.log(`⚠️ Bridge-1使用預設比例: 高度${bridge1Height}, 寬度${bridge1Width}`);
+            }
+
+            // 計算bridge-1位置
+            const bridge1LeftDistanceRatio = 24 / 512; // 24像素距離在512背景中的比例 (4.69%)
+            const bridge1LeftDistance = Math.floor(GAME_HEIGHT * bridge1LeftDistanceRatio);
+            
+            const bridge1X = spring3X + spring3.width + bridge1LeftDistance; // bridge-1左邊與spring右邊距離24像素
+            const bridge1Y = road8Y - bridge1Height; // bridge-1底部對齊road-8頂部
+
+            // 添加bridge-1到world.roads
+            world.roads.push({
+                x: bridge1X,
+                y: bridge1Y,
+                width: bridge1Width,
+                height: bridge1Height,
+                type: 'bridge-1'
+            });
+
+            console.log('🌉 Bridge-1創建完成:', { x: bridge1X, y: bridge1Y, width: bridge1Width, height: bridge1Height });
+
+            // 創建8個road-short-2（掉落平台）
+            const roadShort2HeightRatio = 21 / 512; // 21像素高度在512背景中的比例 (4.10%)
+            let roadShort2Width, roadShort2Height;
+            
+            if (roadOriginalSizes['road-short-2']) {
+                const originalSize = roadOriginalSizes['road-short-2'];
+                const originalRatio = originalSize.width / originalSize.height;
+                
+                // 根據當前遊戲高度計算road-short-2高度
+                roadShort2Height = Math.floor(GAME_HEIGHT * roadShort2HeightRatio);
+                // 根據原始比例計算寬度
+                roadShort2Width = Math.floor(roadShort2Height * originalRatio);
+                
+                console.log(`🎯 Road-short-2動態尺寸計算: 遊戲高度${GAME_HEIGHT} → road-short-2高度${roadShort2Height}, 寬度${roadShort2Width} (原始比例${originalRatio.toFixed(2)})`);
+            } else {
+                // 如果沒有原始尺寸，使用預設比例，假設寬高比為4:1
+                roadShort2Height = Math.floor(GAME_HEIGHT * roadShort2HeightRatio);
+                roadShort2Width = Math.floor(roadShort2Height * 4); // 預設比例
+                
+                console.log(`⚠️ Road-short-2使用預設比例: 高度${roadShort2Height}, 寬度${roadShort2Width}`);
+            }
+
+            // 計算road-short-2位置
+            const roadShort2LeftDistanceRatio = 24 / 512; // 24像素距離在512背景中的比例 (4.69%)
+            const roadShort2SpacingRatio = 40 / 512; // 40像素間距在512背景中的比例 (7.81%)
+            
+            const roadShort2LeftDistance = Math.floor(GAME_HEIGHT * roadShort2LeftDistanceRatio);
+            const roadShort2Spacing = Math.floor(GAME_HEIGHT * roadShort2SpacingRatio);
+            
+            // 第一個road-short-2位置
+            const firstRoadShort2X = bridge1X + bridge1Width + roadShort2LeftDistance; // road-short-2左邊與bridge-1右邊距離24像素
+            const firstRoadShort2Y = bridge1Y; // road-short-2頂部與bridge-1頂部貼齊
+            
+            // 創建8個road-short-2並添加到world.roads
+            for (let i = 0; i < 8; i++) {
+                const roadShort2X = firstRoadShort2X + i * (roadShort2Width + roadShort2Spacing);
+                const roadShort2Y = firstRoadShort2Y;
+                
+                world.roads.push({
+                    x: roadShort2X,
+                    y: roadShort2Y,
+                    width: roadShort2Width,
+                    height: roadShort2Height,
+                    type: 'road-short-2',
+                    id: `road-short-2-${i + 1}`,
+                    isFalling: false,
+                    fallStartTime: null,
+                    fallDuration: 1000, // 1秒掉落時間
+                    originalY: roadShort2Y // 記錄原始Y位置
+                });
+            }
+            
+            console.log('🏗️ 8個road-short-2創建完成:', world.roads.filter(r => r.type === 'road-short-2'));
+
+            // 創建bridge-2
+            const bridge2HeightRatio = 122 / 512; // 122像素高度在512背景中的比例 (23.83%)
+            let bridge2Width, bridge2Height;
+            
+            if (roadOriginalSizes['bridge-2']) {
+                const originalSize = roadOriginalSizes['bridge-2'];
+                const originalRatio = originalSize.width / originalSize.height;
+                
+                // 根據當前遊戲高度計算bridge-2高度
+                bridge2Height = Math.floor(GAME_HEIGHT * bridge2HeightRatio);
+                // 根據原始比例計算寬度
+                bridge2Width = Math.floor(bridge2Height * originalRatio);
+                
+                console.log(`🎯 Bridge-2動態尺寸計算: 遊戲高度${GAME_HEIGHT} → bridge-2高度${bridge2Height}, 寬度${bridge2Width} (原始比例${originalRatio.toFixed(2)})`);
+            } else {
+                // 如果沒有原始尺寸，使用預設比例，假設寬高比為4:1
+                bridge2Height = Math.floor(GAME_HEIGHT * bridge2HeightRatio);
+                bridge2Width = Math.floor(bridge2Height * 4); // 預設比例
+                
+                console.log(`⚠️ Bridge-2使用預設比例: 高度${bridge2Height}, 寬度${bridge2Width}`);
+            }
+
+            // 計算bridge-2位置
+            const bridge2LeftDistanceRatio = 24 / 512; // 24像素距離在512背景中的比例 (4.69%)
+            const bridge2LeftDistance = Math.floor(GAME_HEIGHT * bridge2LeftDistanceRatio);
+            
+            // 找到最後一個road-short-2的位置
+            const lastRoadShort2 = world.roads.find(road => road.type === 'road-short-2' && road.id === 'road-short-2-8');
+            const bridge2X = lastRoadShort2.x + lastRoadShort2.width + bridge2LeftDistance; // bridge-2左邊與最後一個road-short-2右邊距離24像素
+            const bridge2Y = lastRoadShort2.y; // bridge-2頂部對齊road-short-2的頂部
+
+            // 添加bridge-2到world.roads
+            world.roads.push({
+                x: bridge2X,
+                y: bridge2Y,
+                width: bridge2Width,
+                height: bridge2Height,
+                type: 'bridge-2'
+            });
+
+            console.log('🌉 Bridge-2創建完成:', { x: bridge2X, y: bridge2Y, width: bridge2Width, height: bridge2Height });
+
+            // 創建road-9
+            const road9HeightRatio = 32 / 512; // 32像素高度在512背景中的比例，與road-5相同 (6.25%)
+            let road9Width, road9Height;
+            
+            if (roadOriginalSizes['road-9']) {
+                const originalSize = roadOriginalSizes['road-9'];
+                const originalRatio = originalSize.width / originalSize.height;
+                
+                // 根據當前遊戲高度計算road-9高度
+                road9Height = Math.floor(GAME_HEIGHT * road9HeightRatio);
+                // 根據原始比例計算寬度
+                road9Width = Math.floor(road9Height * originalRatio);
+                
+                console.log(`🎯 Road-9動態尺寸計算: 遊戲高度${GAME_HEIGHT} → road-9高度${road9Height}, 寬度${road9Width} (原始比例${originalRatio.toFixed(2)})`);
+            } else {
+                // 如果沒有原始尺寸，使用預設比例，假設寬高比為4:1
+                road9Height = Math.floor(GAME_HEIGHT * road9HeightRatio);
+                road9Width = Math.floor(road9Height * 4); // 預設比例
+                
+                console.log(`⚠️ Road-9使用預設比例: 高度${road9Height}, 寬度${road9Width}`);
+            }
+
+            // 計算road-9位置
+            const road9LeftDistanceRatio = 49 / 512; // 49像素距離在512背景中的比例 (9.57%)
+            const road9LeftDistance = Math.floor(GAME_HEIGHT * road9LeftDistanceRatio);
+            
+            const road9X = bridge2X + road9LeftDistance; // road-9左邊與bridge-2左邊距離49像素
+            const road9Y = bridge2Y + bridge2Height; // road-9頂部對齊bridge-2底部
+
+            // 添加road-9到world.roads
+            world.roads.push({
+                x: road9X,
+                y: road9Y,
+                width: road9Width,
+                height: road9Height,
+                type: 'road-9'
+            });
+
+            console.log('🏗️ Road-9創建完成:', { x: road9X, y: road9Y, width: road9Width, height: road9Height });
             
             // 同步到舊系統（向後兼容）
             springs = springManager.springs;
@@ -1404,8 +1949,8 @@
             
             // 檢查與路面的碰撞
             world.roads.forEach(road => {
-                // road-kanban、house-1、house-2、house-3、house-4、house-5 作為背景，不參與碰撞檢測
-                if (road.type === 'road-kanban' || road.type === 'house-1' || road.type === 'house-2' || road.type === 'house-3' || road.type === 'house-4' || road.type === 'house-5') {
+                            // road-kanban、house-1、house-2、house-3、house-4、house-5、house-6、house-7、house-8 作為背景，不參與碰撞檢測
+            if (road.type === 'road-kanban' || road.type === 'house-1' || road.type === 'house-2' || road.type === 'house-3' || road.type === 'house-4' || road.type === 'house-5' || road.type === 'house-6' || road.type === 'house-7' || road.type === 'house-8') {
                     return; // 跳過背景元素的碰撞檢測
                 }
                 
@@ -1419,8 +1964,8 @@
                         player.velocityY = 0;
                         player.onGround = true;
                         
-                        // 如果是road-short-1，觸發掉落
-                        if (road.type === 'road-short-1' && !road.isFalling) {
+                        // 如果是road-short-1或road-short-2，觸發掉落
+                        if ((road.type === 'road-short-1' || road.type === 'road-short-2') && !road.isFalling) {
                             road.isFalling = true;
                             road.fallStartTime = Date.now();
                             console.log(`⚠️ 玩家踩到 ${road.id}，開始掉落！`);
@@ -1447,7 +1992,7 @@
             const currentTime = Date.now();
             
             world.roads.forEach(road => {
-                if (road.type === 'road-short-1' && road.isFalling) {
+                if ((road.type === 'road-short-1' || road.type === 'road-short-2') && road.isFalling) {
                     const fallProgress = (currentTime - road.fallStartTime) / road.fallDuration;
                     
                     if (fallProgress >= 1) {
@@ -1574,9 +2119,9 @@
             collectedHpCount = 0;
             hpLogoManager.reset();
             
-            // 重置road-short-1掉落狀態
+            // 重置road-short-1和road-short-2掉落狀態
             world.roads.forEach(road => {
-                if (road.type === 'road-short-1') {
+                if (road.type === 'road-short-1' || road.type === 'road-short-2') {
                     road.isFalling = false;
                     road.fallStartTime = 0;
                     road.y = road.originalY;
@@ -2141,7 +2686,7 @@
 
 
         function loadRoadImages() {
-            const roadTypes = ['road-1', 'road-kanban', 'road-2', 'road-3', 'road-4', 'road-mid', 'road-short-1', 'house-1', 'house-2', 'house-3', 'house-4', 'house-5'];
+            const roadTypes = ['road-1', 'road-kanban', 'road-2', 'road-3', 'road-4', 'road-5', 'road-7', 'road-8', 'road-9', 'road-mid', 'road-short-1', 'road-short-2', 'house-1', 'house-2', 'house-3', 'house-4', 'house-5', 'house-6', 'house-7', 'house-8', 'bridge-1', 'bridge-2'];
             let loadedCount = 0;
             
             roadTypes.forEach(type => {
@@ -2201,8 +2746,8 @@
                         ctx.restore();
                     } else {
                         // 如果圖片未載入，繪製預設的方塊
-                        if (road.type === 'road-short-1' && road.isFalling) {
-                            // 掉落中的road-short-1顯示為紅色
+                        if ((road.type === 'road-short-1' || road.type === 'road-short-2') && road.isFalling) {
+                            // 掉落中的road-short-1和road-short-2顯示為紅色
                             ctx.fillStyle = '#FF4444';
                             ctx.strokeStyle = '#FF0000';
                         } else {
@@ -2214,8 +2759,8 @@
                         ctx.fillRect(x, y, road.width, road.height);
                         ctx.strokeRect(x, y, road.width, road.height);
                         
-                        // 為road-short-1添加標籤
-                        if (road.type === 'road-short-1') {
+                        // 為road-short-1和road-short-2添加標籤
+                        if (road.type === 'road-short-1' || road.type === 'road-short-2') {
                             ctx.fillStyle = '#FFFFFF';
                             ctx.font = '8px Arial';
                             ctx.fillText(road.id, x + 2, y + 10);
