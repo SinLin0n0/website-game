@@ -1818,8 +1818,7 @@
             // 更新閃電系統
             lightningManager.update(cloudManager.clouds, GAME_HEIGHT);
             lightningManager2.update(cloudManager2.clouds, GAME_HEIGHT);
-            // 更新心臟狀態
-            heartManager.updateHearts(player.health);
+            // 心臟狀態現在由 HeartManager 內部管理
             // 檢查閃電碰撞
             if (lightningManager.checkCollisions(player)) {
                 takeDamage(1); // 閃電造成1點傷害
@@ -2058,11 +2057,19 @@
                     const triggerX = road.x + (road.width * 0.2); // 1/5 = 0.2
                     
                     if (player.x >= triggerX) {
-                        road.isTransformed = true;
-                        road.transformStartTime = currentTime;
-                        road.type = 'laboratory-2';
-                        player.controlDisabled = true; // 禁用主角控制
-                        console.log('🏥 Laboratory-1轉換為Laboratory-2！主角控制已禁用');
+                        // 檢查是否收集了足夠的光球（至少35顆）
+                        if (typeof heartManager !== 'undefined' && heartManager.canWin()) {
+                            road.isTransformed = true;
+                            road.transformStartTime = currentTime;
+                            road.type = 'laboratory-2';
+                            player.controlDisabled = true; // 禁用主角控制
+                            console.log('🏥 Laboratory-1轉換為Laboratory-2！主角控制已禁用');
+                        } else {
+                            // 光球數量不足，阻止進入
+                            player.x = triggerX - 1; // 阻止進入
+                            const orbsNeeded = 35 - (heartManager ? heartManager.collectedOrbs : 0);
+                            console.log(`❌ 光球數量不足！還需要收集 ${orbsNeeded} 顆光球才能過關`);
+                        }
                     }
                 } else if (road.type === 'laboratory-2' && road.isTransformed) {
                     const transformProgress = (currentTime - road.transformStartTime) / road.transformDuration;
@@ -2098,10 +2105,19 @@
         }
         
         function takeDamage(amount) {
-            player.health -= amount;
-            if (player.health <= 0) {
-                player.health = 0;
-                endGame(false);
+            // 如果是雷擊傷害（amount = 1），使用愛心系統
+            if (amount === 1 && typeof heartManager !== 'undefined') {
+                const gameOver = heartManager.loseHeart();
+                if (gameOver) {
+                    endGame(false);
+                }
+            } else {
+                // 其他傷害保持原邏輯（如掉落傷害）
+                player.health -= amount;
+                if (player.health <= 0) {
+                    player.health = 0;
+                    endGame(false);
+                }
             }
             updateUI();
         }
@@ -3582,7 +3598,12 @@
                             
                             hpLogo.collected = true;
                             collectedCount++;
-                            console.log(`💊 HP Logo被收集: ${hpLogo.id}`);
+                            console.log(`💊 光球被收集: ${hpLogo.id}`);
+                            
+                            // 通知 HeartManager 收集了光球
+                            if (typeof heartManager !== 'undefined') {
+                                heartManager.collectOrb();
+                            }
                         }
                     }
                 });
@@ -3941,6 +3962,8 @@
                 this.imagesLoaded = false;
                 this.maxHearts = 5;
                 this.currentHearts = 5;
+                this.collectedOrbs = 0; // 總收集光球數
+                this.orbsForRecovery = 0; // 用於回復的光球計數
             }
 
             // 載入Heart圖片
@@ -4040,25 +4063,64 @@
                 console.log('❤️ 心臟系統創建完成:', this.hearts);
             }
 
-            // 更新心臟狀態
-            updateHearts(playerHealth) {
-                // 將玩家生命值轉換為心臟數量 (100生命值 = 5顆心臟)
-                const healthPerHeart = 100 / this.maxHearts; // 20生命值 = 1顆心臟
-                this.currentHearts = Math.ceil(playerHealth / healthPerHeart);
+            // 扣除愛心（被雷擊時調用）
+            loseHeart() {
+                if (this.currentHearts > 0) {
+                    this.currentHearts--;
+                    this.updateHeartDisplay();
+                    console.log(`❤️ 愛心被扣除，剩餘：${this.currentHearts}/${this.maxHearts}`);
+                    
+                    if (this.currentHearts === 0) {
+                        console.log('💀 生命歸零，遊戲結束！');
+                        return true; // 返回true表示遊戲結束
+                    }
+                }
+                return false;
+            }
+
+            // 收集光球
+            collectOrb() {
+                this.collectedOrbs++;
+                this.orbsForRecovery++;
+                console.log(`💎 收集光球：${this.collectedOrbs}總數，回復用：${this.orbsForRecovery}`);
                 
-                // 確保心臟數量在有效範圍內
-                this.currentHearts = Math.max(0, Math.min(this.maxHearts, this.currentHearts));
-                
-                // 更新每個心臟的類型（排除hp-small）
+                // 每5顆光球回復1點生命
+                if (this.orbsForRecovery >= 5 && this.currentHearts < this.maxHearts) {
+                    this.currentHearts++;
+                    this.orbsForRecovery -= 5; // 扣除用於回復的光球
+                    this.updateHeartDisplay();
+                    console.log(`❤️ 回復愛心！當前：${this.currentHearts}/${this.maxHearts}`);
+                }
+            }
+
+            // 更新心臟顯示
+            updateHeartDisplay() {
+                // 更新每個心臟的類型（排除hp-small），從右邊開始扣除
+                let heartIndex = 0;
                 this.hearts.forEach((heart, index) => {
                     if (heart.type === 'hp-small') return; // 跳過hp-small
                     
-                    if (index < this.currentHearts) {
+                    if (heartIndex < this.currentHearts) {
                         heart.type = 'heart-1'; // 滿心臟
                     } else {
                         heart.type = 'heart-2'; // 空心臟
                     }
+                    heartIndex++;
                 });
+            }
+
+            // 檢查是否可以過關（至少35顆光球）
+            canWin() {
+                return this.collectedOrbs >= 35;
+            }
+
+            // 獲取當前狀態
+            getStatus() {
+                return {
+                    hearts: this.currentHearts,
+                    orbs: this.collectedOrbs,
+                    canWin: this.canWin()
+                };
             }
 
             // 繪製心臟
@@ -4116,7 +4178,7 @@
 
                 // 如果找到hp-small，在其右邊顯示光球收集數量
                 if (hpSmallFound && typeof hpLogoManager !== 'undefined') {
-                    const collectedCount = hpLogoManager.getCollectedCount();
+                    const collectedCount = this.collectedOrbs;
                     const totalCount = hpLogoManager.getTotalCount();
                     const text = `${collectedCount}/${totalCount}`;
 
@@ -4147,8 +4209,12 @@
             // 重置心臟狀態
             reset() {
                 this.currentHearts = this.maxHearts;
+                this.collectedOrbs = 0;
+                this.orbsForRecovery = 0;
                 this.hearts.forEach(heart => {
-                    heart.type = 'heart-1';
+                    if (heart.type !== 'hp-small') {
+                        heart.type = 'heart-1';
+                    }
                 });
             }
 
