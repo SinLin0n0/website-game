@@ -918,6 +918,51 @@
             );
 
             console.log('🏗️ 三個階梯狀road-mid創建完成:', world.roads.filter(r => r.type.includes('road-mid')));
+
+            // 創建road-4
+            const road4HeightRatio = 32 / 512; // 32像素高度在512背景中的比例，與road-3相同 (6.25%)
+            let road4Width, road4Height;
+            
+            if (roadOriginalSizes['road-4']) {
+                const originalSize = roadOriginalSizes['road-4'];
+                const originalRatio = originalSize.width / originalSize.height;
+                
+                // 根據當前遊戲高度計算road-4高度
+                road4Height = Math.floor(GAME_HEIGHT * road4HeightRatio);
+                // 根據原始比例計算寬度
+                road4Width = Math.floor(road4Height * originalRatio);
+                
+                console.log(`🎯 Road-4動態尺寸計算: 遊戲高度${GAME_HEIGHT} → road-4高度${road4Height}, 寬度${road4Width} (原始比例${originalRatio.toFixed(2)})`);
+            } else {
+                // 如果沒有原始尺寸，使用預設比例，假設寬高比為4:1
+                road4Height = Math.floor(GAME_HEIGHT * road4HeightRatio);
+                road4Width = Math.floor(road4Height * 4); // 預設比例
+                
+                console.log(`⚠️ Road-4使用預設比例: 高度${road4Height}, 寬度${road4Width}`);
+            }
+
+            // 計算road-4位置
+            const road4BottomDistanceRatio = 143 / 512; // 143像素距離在512背景中的比例 (27.93%)
+            const road4LeftDistanceRatio = 40 / 512; // 40像素距離在512背景中的比例 (7.81%)
+            
+            const road4BottomDistance = Math.floor(GAME_HEIGHT * road4BottomDistanceRatio);
+            const road4LeftDistance = Math.floor(GAME_HEIGHT * road4LeftDistanceRatio);
+            
+            // 找到最後一個road-mid（第三個）的位置
+            const lastRoadMid = world.roads.find(road => road.type === 'road-mid' && road.x === thirdRoadMidX);
+            const road4X = lastRoadMid.x + lastRoadMid.width + road4LeftDistance;
+            const road4Y = GAME_HEIGHT - road4BottomDistance - road4Height;
+
+            // 添加road-4到world.roads
+            world.roads.push({
+                x: road4X,
+                y: road4Y,
+                width: road4Width,
+                height: road4Height,
+                type: 'road-4'
+            });
+
+            console.log('🏗️ Road-4創建完成:', { x: road4X, y: road4Y, width: road4Width, height: road4Height });
             
             // 設置玩家初始位置在road-1元件上方
             player.x = roadX + 50; // 在road-1左側一點
@@ -987,6 +1032,38 @@
             // 同步到舊系統（向後兼容）
             springs = springManager.springs;
             hpLogos = hpLogoManager.hpLogos;
+            
+            // 動態計算世界寬度，確保包含所有元素
+            let maxX = 0;
+            
+            // 檢查所有road元素的最右邊位置
+            world.roads.forEach(road => {
+                const roadRightX = road.x + road.width;
+                if (roadRightX > maxX) {
+                    maxX = roadRightX;
+                }
+            });
+            
+            // 檢查所有HP Logo的最右邊位置
+            hpLogoManager.hpLogos.forEach(hpLogo => {
+                const hpLogoRightX = hpLogo.x + hpLogo.width;
+                if (hpLogoRightX > maxX) {
+                    maxX = hpLogoRightX;
+                }
+            });
+            
+            // 檢查所有Spring的最右邊位置
+            springManager.springs.forEach(spring => {
+                const springRightX = spring.x + spring.width;
+                if (springRightX > maxX) {
+                    maxX = springRightX;
+                }
+            });
+            
+            // 設定世界寬度為最右邊元素位置加上一些緩衝區（一個螢幕寬度）
+            world.width = Math.max(maxX + GAME_WIDTH, 4000); // 最小保持4000，或更大
+            
+            console.log(`🌍 世界寬度動態更新: ${world.width}px (最右邊元素位置: ${maxX}px)`);
             
             // 已刪除終點設定（lab 藍色框框）
             world.endpoint = null;
@@ -1881,7 +1958,7 @@
 
 
         function loadRoadImages() {
-            const roadTypes = ['road-1', 'road-kanban', 'road-2', 'road-3', 'road-mid', 'house-1', 'house-2', 'house-3'];
+            const roadTypes = ['road-1', 'road-kanban', 'road-2', 'road-3', 'road-4', 'road-mid', 'house-1', 'house-2', 'house-3'];
             let loadedCount = 0;
             
             roadTypes.forEach(type => {
