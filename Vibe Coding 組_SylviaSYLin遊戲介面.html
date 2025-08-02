@@ -692,6 +692,34 @@
             const road3X = road2X + road2Width + road3LeftDistance; // 左邊對齊road-2右邊，距離63像素
             const road3Y = GAME_HEIGHT - Math.floor(GAME_HEIGHT * road3BottomDistanceRatio) - road3Height; // 底部對齊背景底部，距離65像素
             
+            // 計算house-2元件尺寸
+            let house2Width, house2Height;
+            const house2HeightRatio = 189 / 512; // 189像素高度在512背景中的比例 (36.91%)
+            
+            if (roadOriginalSizes['house-2']) {
+                const originalSize = roadOriginalSizes['house-2'];
+                const originalRatio = originalSize.width / originalSize.height;
+                
+                // 根據當前遊戲高度計算house-2高度
+                house2Height = Math.floor(GAME_HEIGHT * house2HeightRatio);
+                // 根據原始比例計算寬度
+                house2Width = Math.floor(house2Height * originalRatio);
+                
+                console.log(`🎯 動態尺寸計算: 遊戲高度${GAME_HEIGHT} → house-2高度${house2Height}, 寬度${house2Width} (原始比例${originalRatio.toFixed(2)})`);
+            } else {
+                // 如果沒有原始尺寸，使用預設比例，假設房子寬高比為4:3
+                house2Height = Math.floor(GAME_HEIGHT * house2HeightRatio);
+                house2Width = Math.floor(house2Height * (4/3)); // 預設比例
+                
+                console.log(`⚠️ 使用預設比例: house-2高度${house2Height}, 寬度${house2Width}`);
+            }
+            
+            // 設定house-2位置：底部對齊road-3的頂部，左邊與road-3左邊距離為25
+            const house2LeftDistanceRatio = 25 / 512; // 25像素距離在512背景中的比例 (4.88%)
+            const house2LeftDistance = Math.floor(GAME_HEIGHT * house2LeftDistanceRatio); // 使用背景高度計算距離
+            const house2X = road3X + house2LeftDistance; // 右邊距離road-3右邊25像素
+            const house2Y = road3Y - house2Height; // 底部對齊road-3頂部
+            
             // 創建road元件
             world.roads = [
                 {
@@ -728,6 +756,13 @@
                     width: house1Width,
                     height: house1Height,
                     type: 'house-1'
+                },
+                {
+                    x: house2X,
+                    y: house2Y,
+                    width: house2Width,
+                    height: house2Height,
+                    type: 'house-2'
                 }
             ];
             
@@ -923,8 +958,8 @@
             
             // 檢查與路面的碰撞
             world.roads.forEach(road => {
-                // road-kanban 和 house-1 作為背景，不參與碰撞檢測
-                if (road.type === 'road-kanban' || road.type === 'house-1') {
+                // road-kanban、house-1 和 house-2 作為背景，不參與碰撞檢測
+                if (road.type === 'road-kanban' || road.type === 'house-1' || road.type === 'house-2') {
                     return; // 跳過背景元素的碰撞檢測
                 }
                 
@@ -1149,7 +1184,7 @@
         }
 
         function loadRoadImages() {
-            const roadTypes = ['road-1', 'road-kanban', 'road-2', 'road-3', 'house-1'];
+            const roadTypes = ['road-1', 'road-kanban', 'road-2', 'road-3', 'house-1', 'house-2'];
             let loadedCount = 0;
             
             roadTypes.forEach(type => {
