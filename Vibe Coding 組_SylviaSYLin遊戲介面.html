@@ -846,6 +846,78 @@
                     type: 'house-3'
                 }
             ];
+
+            // 創建三個階梯狀的road-mid
+            const roadMidHeightRatio = 32 / 512; // 32像素高度在512背景中的比例 (6.25%)
+            let roadMidWidth, roadMidHeight;
+            
+            if (roadOriginalSizes['road-mid']) {
+                const originalSize = roadOriginalSizes['road-mid'];
+                const originalRatio = originalSize.width / originalSize.height;
+                
+                // 根據當前遊戲高度計算road-mid高度
+                roadMidHeight = Math.floor(GAME_HEIGHT * roadMidHeightRatio);
+                // 根據原始比例計算寬度
+                roadMidWidth = Math.floor(roadMidHeight * originalRatio);
+                
+                console.log(`🎯 Road-mid動態尺寸計算: 遊戲高度${GAME_HEIGHT} → road-mid高度${roadMidHeight}, 寬度${roadMidWidth} (原始比例${originalRatio.toFixed(2)})`);
+            } else {
+                // 如果沒有原始尺寸，使用預設比例，假設寬高比為4:1
+                roadMidHeight = Math.floor(GAME_HEIGHT * roadMidHeightRatio);
+                roadMidWidth = Math.floor(roadMidHeight * 4); // 預設比例
+                
+                console.log(`⚠️ Road-mid使用預設比例: 高度${roadMidHeight}, 寬度${roadMidWidth}`);
+            }
+
+            // 計算距離比例
+            const firstRoadMidBottomDistanceRatio = 127 / 512; // 127像素距離在512背景中的比例 (24.8%)
+            const firstRoadMidLeftDistanceRatio = 94 / 512; // 94像素距離在512背景中的比例 (18.36%)
+            const roadMidSpacingRatio = 16 / 512; // 16像素間距在512背景中的比例 (3.125%)
+            const roadMidVerticalSpacingRatio = 32 / 512; // 32像素垂直間距在512背景中的比例 (6.25%)
+
+            const firstRoadMidBottomDistance = Math.floor(GAME_HEIGHT * firstRoadMidBottomDistanceRatio);
+            const firstRoadMidLeftDistance = Math.floor(GAME_HEIGHT * firstRoadMidLeftDistanceRatio);
+            const roadMidSpacing = Math.floor(GAME_HEIGHT * roadMidSpacingRatio);
+            const roadMidVerticalSpacing = Math.floor(GAME_HEIGHT * roadMidVerticalSpacingRatio);
+
+            // 第一個road-mid位置
+            const firstRoadMidX = road3X + road3Width + firstRoadMidLeftDistance;
+            const firstRoadMidY = GAME_HEIGHT - firstRoadMidBottomDistance - roadMidHeight;
+
+            // 第二個road-mid位置
+            const secondRoadMidX = firstRoadMidX + roadMidWidth + roadMidSpacing;
+            const secondRoadMidY = firstRoadMidY - roadMidVerticalSpacing - roadMidHeight;
+
+            // 第三個road-mid位置
+            const thirdRoadMidX = secondRoadMidX + roadMidWidth + roadMidSpacing;
+            const thirdRoadMidY = secondRoadMidY - roadMidVerticalSpacing - roadMidHeight;
+
+            // 添加三個road-mid到world.roads
+            world.roads.push(
+                {
+                    x: firstRoadMidX,
+                    y: firstRoadMidY,
+                    width: roadMidWidth,
+                    height: roadMidHeight,
+                    type: 'road-mid'
+                },
+                {
+                    x: secondRoadMidX,
+                    y: secondRoadMidY,
+                    width: roadMidWidth,
+                    height: roadMidHeight,
+                    type: 'road-mid'
+                },
+                {
+                    x: thirdRoadMidX,
+                    y: thirdRoadMidY,
+                    width: roadMidWidth,
+                    height: roadMidHeight,
+                    type: 'road-mid'
+                }
+            );
+
+            console.log('🏗️ 三個階梯狀road-mid創建完成:', world.roads.filter(r => r.type.includes('road-mid')));
             
             // 設置玩家初始位置在road-1元件上方
             player.x = roadX + 50; // 在road-1左側一點
@@ -897,6 +969,20 @@
                 
                 hpLogoManager.createVerticalHpLogos(springCenterX, firstVerticalHpLogoBottomY, 3, verticalSpacing, GAME_HEIGHT);
             }
+
+            // 在每個road-mid上方創建HP Logo
+            const roadMids = world.roads.filter(road => road.type.includes('road-mid'));
+            roadMids.forEach((roadMid, index) => {
+                // 計算HP Logo的中心X位置（與road-mid垂直置中）
+                const hpLogoCenterX = roadMid.x + Math.floor(roadMid.width / 2);
+                // HP Logo底部貼齊road-mid頂部
+                const hpLogoBottomY = roadMid.y;
+                
+                // 為每個road-mid創建一個HP Logo
+                hpLogoManager.createVerticalHpLogos(hpLogoCenterX, hpLogoBottomY, 1, 0, GAME_HEIGHT);
+                
+                console.log(`🩹 在road-mid-${index + 1}上方創建HP Logo，位置: (${hpLogoCenterX}, ${hpLogoBottomY})`);
+            });
             
             // 同步到舊系統（向後兼容）
             springs = springManager.springs;
@@ -1795,7 +1881,7 @@
 
 
         function loadRoadImages() {
-            const roadTypes = ['road-1', 'road-kanban', 'road-2', 'road-3', 'house-1', 'house-2', 'house-3'];
+            const roadTypes = ['road-1', 'road-kanban', 'road-2', 'road-3', 'road-mid', 'house-1', 'house-2', 'house-3'];
             let loadedCount = 0;
             
             roadTypes.forEach(type => {
