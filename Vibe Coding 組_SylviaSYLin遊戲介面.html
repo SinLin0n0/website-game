@@ -477,6 +477,7 @@
             cloudManager2.loadImages();
             lightningManager.loadImages();
             lightningManager2.loadImages();
+            heartManager.loadImages();
             createWorld();
             setupEventListeners();
             updateUI();
@@ -1761,6 +1762,12 @@
                     springManager.updateAllDimensions();
                 }
                 
+                // 重新創建心臟系統（窗口大小改變時）
+                if (heartManager.imagesLoaded) {
+                    heartManager.clear();
+                    heartManager.createHearts();
+                }
+                
                 // 調整玩家位置
                 player.y = Math.floor(GAME_HEIGHT * 0.5);
             });
@@ -1811,6 +1818,8 @@
             // 更新閃電系統
             lightningManager.update(cloudManager.clouds, GAME_HEIGHT);
             lightningManager2.update(cloudManager2.clouds, GAME_HEIGHT);
+            // 更新心臟狀態
+            heartManager.updateHearts(player.health);
             // 檢查閃電碰撞
             if (lightningManager.checkCollisions(player)) {
                 takeDamage(1); // 閃電造成1點傷害
@@ -2197,6 +2206,7 @@
             cloudManager2.reset();
             lightningManager.reset();
             lightningManager2.reset();
+            heartManager.reset();
             
             // 清除所有按鍵狀態
             keys = {};
@@ -2224,6 +2234,8 @@
             cloudManager2.draw(ctx, camera, GAME_WIDTH, GAME_HEIGHT);
             lightningManager.draw(ctx, camera, GAME_WIDTH, GAME_HEIGHT);
             lightningManager2.draw(ctx, camera, GAME_WIDTH, GAME_HEIGHT);
+            // 繪製心臟系統
+            heartManager.draw(ctx, camera, GAME_WIDTH, GAME_HEIGHT);
             // drawEndpoint(); // 已刪除 lab 藍色框框
             drawPlayer();
             
@@ -3662,7 +3674,7 @@
 
 
         function loadRoadImages() {
-            const roadTypes = ['road-1', 'road-kanban', 'road-2', 'road-3', 'road-4', 'road-5', 'road-7', 'road-8', 'road-9', 'road-mid', 'road-short-1', 'road-short-2', 'house-1', 'house-2', 'house-3', 'house-4', 'house-5', 'house-6', 'house-7', 'house-8', 'bridge-1', 'bridge-2', 'laboratory-1', 'laboratory-2', 'cloud-1', 'cloud-2', 'cloud-3', 'lightning'];
+            const roadTypes = ['road-1', 'road-kanban', 'road-2', 'road-3', 'road-4', 'road-5', 'road-7', 'road-8', 'road-9', 'road-mid', 'road-short-1', 'road-short-2', 'house-1', 'house-2', 'house-3', 'house-4', 'house-5', 'house-6', 'house-7', 'house-8', 'bridge-1', 'bridge-2', 'laboratory-1', 'laboratory-2', 'cloud-1', 'cloud-2', 'cloud-3', 'lightning', 'heart-1', 'heart-2'];
             let loadedCount = 0;
             
             roadTypes.forEach(type => {
@@ -3918,6 +3930,236 @@
         }
         
         window.addEventListener('load', init);
+
+        // ===============================
+        // Heart 心臟系統
+        // ===============================
+        class HeartManager {
+            constructor() {
+                this.hearts = [];
+                this.images = {};
+                this.imagesLoaded = false;
+                this.maxHearts = 5;
+                this.currentHearts = 5;
+            }
+
+            // 載入Heart圖片
+            loadImages() {
+                const heartTypes = ['heart-1', 'heart-2', 'hp-small'];
+                let loadedCount = 0;
+                
+                heartTypes.forEach(type => {
+                    const img = new Image();
+                    img.onload = () => {
+                        this.images[type] = img;
+                        loadedCount++;
+                        console.log(`✅ 心臟圖片載入完成: ${type}.svg`);
+                        
+                        if (loadedCount === heartTypes.length) {
+                            this.imagesLoaded = true;
+                            console.log('❤️ 所有心臟圖片載入完成！');
+                            // 圖片載入完成後創建心臟
+                            this.createHearts();
+                        }
+                    };
+                    img.onerror = () => {
+                        console.log(`❌ 心臟圖片載入失敗: ${type}.svg`);
+                        loadedCount++;
+                        if (loadedCount === heartTypes.length) {
+                            this.imagesLoaded = true;
+                            this.createHearts();
+                        }
+                    };
+                    img.src = `${type}.svg`;
+                });
+            }
+
+            // 創建心臟
+            createHearts() {
+                // 計算心臟尺寸
+                const heartHeightRatio = 22 / 512; // 22像素高度在512背景中的比例 (4.30%)
+                const heartHeight = Math.floor(GAME_HEIGHT * heartHeightRatio);
+                
+                let heartWidth;
+                if (this.images['heart-1'] && this.images['heart-1'].complete) {
+                    const originalRatio = this.images['heart-1'].naturalWidth / this.images['heart-1'].naturalHeight;
+                    heartWidth = Math.floor(heartHeight * originalRatio);
+                } else {
+                    const defaultRatio = 1.0; // 預設為正方形
+                    heartWidth = Math.floor(heartHeight * defaultRatio);
+                }
+
+                // 計算心臟位置
+                const heartTopDistanceRatio = 20 / 512; // 20像素距離在512背景中的比例 (3.91%)
+                const heartLeftDistanceRatio = 30 / 512; // 30像素距離在512背景中的比例 (5.86%)
+                const heartSpacingRatio = 4 / 512; // 4像素間距在512背景中的比例 (0.78%)
+                
+                const heartTopDistance = Math.floor(GAME_HEIGHT * heartTopDistanceRatio);
+                const heartLeftDistance = Math.floor(GAME_HEIGHT * heartLeftDistanceRatio);
+                const heartSpacing = Math.floor(GAME_HEIGHT * heartSpacingRatio);
+
+                // 創建5個心臟
+                for (let i = 0; i < this.maxHearts; i++) {
+                    this.hearts.push({
+                        x: heartLeftDistance + i * (heartWidth + heartSpacing),
+                        y: heartTopDistance,
+                        width: heartWidth,
+                        height: heartHeight,
+                        type: 'heart-1', // 預設為滿心臟
+                        id: `heart_${i + 1}`
+                    });
+                }
+
+                // 計算hp-small尺寸
+                const hpSmallHeightRatio = 22 / 512; // 22像素高度在512背景中的比例
+                const hpSmallHeight = Math.floor(GAME_HEIGHT * hpSmallHeightRatio);
+                
+                let hpSmallWidth;
+                if (this.images['hp-small'] && this.images['hp-small'].complete) {
+                    const originalRatio = this.images['hp-small'].naturalWidth / this.images['hp-small'].naturalHeight;
+                    hpSmallWidth = Math.floor(hpSmallHeight * originalRatio);
+                } else {
+                    const defaultRatio = 1.0; // 預設為正方形
+                    hpSmallWidth = Math.floor(hpSmallHeight * defaultRatio);
+                }
+
+                // 計算hp-small位置
+                const hpSmallTopDistanceRatio = 8 / 512; // 8像素距離在512背景中的比例
+                const hpSmallTopDistance = Math.floor(GAME_HEIGHT * hpSmallTopDistanceRatio);
+
+                // 創建hp-small
+                this.hearts.push({
+                    x: heartLeftDistance, // 與heart-1左邊對齊
+                    y: heartTopDistance + heartHeight + hpSmallTopDistance, // heart-1底部往下8像素
+                    width: hpSmallWidth,
+                    height: hpSmallHeight,
+                    type: 'hp-small',
+                    id: 'hp-small'
+                });
+
+                console.log('❤️ 心臟系統創建完成:', this.hearts);
+            }
+
+            // 更新心臟狀態
+            updateHearts(playerHealth) {
+                // 將玩家生命值轉換為心臟數量 (100生命值 = 5顆心臟)
+                const healthPerHeart = 100 / this.maxHearts; // 20生命值 = 1顆心臟
+                this.currentHearts = Math.ceil(playerHealth / healthPerHeart);
+                
+                // 確保心臟數量在有效範圍內
+                this.currentHearts = Math.max(0, Math.min(this.maxHearts, this.currentHearts));
+                
+                // 更新每個心臟的類型（排除hp-small）
+                this.hearts.forEach((heart, index) => {
+                    if (heart.type === 'hp-small') return; // 跳過hp-small
+                    
+                    if (index < this.currentHearts) {
+                        heart.type = 'heart-1'; // 滿心臟
+                    } else {
+                        heart.type = 'heart-2'; // 空心臟
+                    }
+                });
+            }
+
+            // 繪製心臟
+            draw(ctx, camera, GAME_WIDTH, GAME_HEIGHT) {
+                let hpSmallX = 0;
+                let hpSmallY = 0;
+                let hpSmallWidth = 0;
+                let hpSmallHeight = 0;
+                let hpSmallFound = false;
+
+                this.hearts.forEach(heart => {
+                    // 固定在螢幕位置，不受攝影機影響
+                    const x = Math.floor(heart.x);
+                    const y = Math.floor(heart.y);
+                    
+                    if (this.imagesLoaded && this.images[heart.type]) {
+                        ctx.save();
+                        ctx.imageSmoothingEnabled = false;
+                        ctx.drawImage(this.images[heart.type], x, y, heart.width, heart.height);
+                        ctx.restore();
+
+                        // 記錄hp-small的位置信息
+                        if (heart.type === 'hp-small') {
+                            hpSmallX = x;
+                            hpSmallY = y;
+                            hpSmallWidth = heart.width;
+                            hpSmallHeight = heart.height;
+                            hpSmallFound = true;
+                        }
+                    } else {
+                        // 預設心臟樣式
+                        ctx.fillStyle = heart.type === 'heart-1' ? '#ff0000' : '#666666';
+                        ctx.fillRect(x, y, heart.width, heart.height);
+                        
+                        // 繪製心臟輪廓
+                        ctx.strokeStyle = '#ffffff';
+                        ctx.lineWidth = 2;
+                        ctx.strokeRect(x, y, heart.width, heart.height);
+                        
+                        // 顯示心臟類型
+                        ctx.fillStyle = '#ffffff';
+                        ctx.font = '8px "Press Start 2P"';
+                        ctx.fillText(heart.type === 'heart-1' ? 'H1' : 'H2', x + 2, y + 10);
+
+                        // 記錄hp-small的位置信息（預設樣式時）
+                        if (heart.type === 'hp-small') {
+                            hpSmallX = x;
+                            hpSmallY = y;
+                            hpSmallWidth = heart.width;
+                            hpSmallHeight = heart.height;
+                            hpSmallFound = true;
+                        }
+                    }
+                });
+
+                // 如果找到hp-small，在其右邊顯示光球收集數量
+                if (hpSmallFound && typeof hpLogoManager !== 'undefined') {
+                    const collectedCount = hpLogoManager.getCollectedCount();
+                    const totalCount = hpLogoManager.getTotalCount();
+                    const text = `${collectedCount}/${totalCount}`;
+
+                    // 計算文字距離
+                    const textSpacingRatio = 4 / 512; // 4像素距離在512背景中的比例
+                    const textSpacing = Math.floor(GAME_HEIGHT * textSpacingRatio);
+
+                    // 動態計算文字大小（當hp-small高度為22時，字體大小為16）
+                    const fontSizeRatio = 12 / 22; // 16pt字體對應22像素hp-small高度的比例
+                    const fontSize = Math.floor(hpSmallHeight * fontSizeRatio);
+                    
+                    // 設置文字樣式
+                    ctx.save();
+                    ctx.font = `${fontSize}px "Press Start 2P"`;
+                    ctx.fillStyle = '#ffffff';
+                    ctx.textBaseline = 'middle';
+                    
+                    // 計算文字位置（水平置中對齊hp-small）
+                    const textX = hpSmallX + hpSmallWidth + textSpacing;
+                    const textY = hpSmallY + Math.floor(hpSmallHeight / 2);
+
+                    // 繪製文字
+                    ctx.fillText(text, textX, textY);
+                    ctx.restore();
+                }
+            }
+
+            // 重置心臟狀態
+            reset() {
+                this.currentHearts = this.maxHearts;
+                this.hearts.forEach(heart => {
+                    heart.type = 'heart-1';
+                });
+            }
+
+            // 清空所有心臟
+            clear() {
+                this.hearts = [];
+            }
+        }
+
+        // 創建全域心臟管理器
+        const heartManager = new HeartManager();
     </script>
 </body>
 </html>
