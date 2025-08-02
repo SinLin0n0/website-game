@@ -1878,6 +1878,17 @@
                         event.preventDefault();
                         event.stopPropagation();
                         
+                        // 播放按鈕點擊音效
+                        try {
+                            const buttonAudio = new Audio('sound/button.mp3');
+                            buttonAudio.volume = 0.5; // 設定音量為50%
+                            buttonAudio.play().catch(e => {
+                                console.log('音效播放失敗:', e);
+                            });
+                        } catch (error) {
+                            console.log('音效載入失敗:', error);
+                        }
+                        
                         // 防止快速連續點擊
                         if (isProcessingClick) {
                             console.log('⚠️ 點擊處理中，忽略此次點擊');
