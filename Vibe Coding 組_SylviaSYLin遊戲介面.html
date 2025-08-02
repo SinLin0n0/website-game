@@ -260,7 +260,12 @@
         
         // HP Logo 音效管理
         let hpLogoAudio = null;
-        let hpLogoAudioVolume = 0.3; // HP Logo 音效音量70%
+        let hpLogoAudioVolume = 0.3; // HP Logo 音效音量30%
+        
+        // 跑步音效管理
+        let runningAudio = null;
+        let runningAudioVolume = 0.2; // 跑步音效音量40%
+        let isRunningAudioPlaying = false; // 追蹤跑步音效是否正在播放
         
         // 背景圖片變數
         let backgroundImage = null;
@@ -517,6 +522,7 @@
             initButtonAudio();
             initJumpAudio();
             initHpLogoAudio();
+            initRunningAudio();
             
             gameLoop(); // 啟動遊戲循環以顯示前言背景
         }
@@ -2101,6 +2107,39 @@
             }
         }
         
+        function initRunningAudio() {
+            try {
+                runningAudio = new Audio('sound/running.mp3');
+                runningAudio.volume = runningAudioVolume;
+                runningAudio.loop = true; // 跑步音效循環播放
+                console.log('🔊 跑步音效初始化完成（音量：' + (runningAudioVolume * 100) + '%）');
+            } catch (error) {
+                console.log('🚫 跑步音效初始化失敗:', error);
+            }
+        }
+        
+        function startRunningAudio() {
+            if (runningAudio && !isRunningAudioPlaying) {
+                runningAudio.currentTime = 0;
+                runningAudio.volume = runningAudioVolume;
+                runningAudio.play().then(() => {
+                    isRunningAudioPlaying = true;
+                    console.log('🏃‍♂️ 開始播放跑步音效');
+                }).catch(e => {
+                    console.log('🚫 跑步音效播放失敗:', e);
+                });
+            }
+        }
+        
+        function stopRunningAudio() {
+            if (runningAudio && isRunningAudioPlaying) {
+                runningAudio.pause();
+                runningAudio.currentTime = 0;
+                isRunningAudioPlaying = false;
+                console.log('🏃‍♂️ 停止播放跑步音效');
+            }
+        }
+        
         // 音樂管理函數
         function initGameBGM() {
             try {
@@ -2284,6 +2323,14 @@
                 // 檢查是否切換到 jumpPrepare（顯示 jump-1 時播放音效）
                 if (newAnimation === 'jumpPrepare') {
                     playJumpAudio();
+                }
+                
+                // 檢查是否切換到跑步狀態
+                if (newAnimation === 'running') {
+                    startRunningAudio();
+                } else {
+                    // 如果切換到其他狀態，停止跑步音效
+                    stopRunningAudio();
                 }
                 
                 currentAnimation = newAnimation;
