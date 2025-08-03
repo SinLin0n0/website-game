@@ -58,7 +58,7 @@
         }
         
         .intro-content {
-            background: url('assets/story-bg.svg') no-repeat center center;
+            background: url('Vibe Coding 組_SylviaSYLin遊戲介面/assets/story-bg.svg') no-repeat center center;
             background-size: cover;
             border: none;
             border-radius: 0;
@@ -440,6 +440,10 @@
         let bornAudioVolume = 0.6; // Born 音效音量40%
         let isBornAudioPlaying = false; // 追蹤 Born 音效是否正在播放
         
+        // 前言系統變數
+        let clickCount = 0; // 追蹤前言按鈕點擊次數
+        let isProcessingClick = false; // 防止快速連續點擊
+        
         // 背景圖片變數
         let backgroundImage = null;
         let backgroundWidth = 0;
@@ -513,7 +517,7 @@
                 backgroundLoaded = false;
             };
             // 使用相對路徑 - 請將您的背景圖片命名為 background.jpg 並放在與此HTML文件相同的目錄中
-            backgroundImage.src = 'assets/background.jpg';
+            backgroundImage.src = 'Vibe Coding 組_SylviaSYLin遊戲介面/assets/background.jpg';
         }
         
         // 載入角色動畫 - 確保正確順序載入
@@ -524,16 +528,16 @@
             
             // 站立動畫圖片路徑（SVG格式）
             const idleFramePaths = [
-                        'assets/character-idle-1.svg',
-        'assets/character-idle-2.svg'
+                        'Vibe Coding 組_SylviaSYLin遊戲介面/assets/character-idle-1.svg',
+        'Vibe Coding 組_SylviaSYLin遊戲介面/assets/character-idle-2.svg'
             ];
             
             // 跑步動畫圖片路徑（SVG格式） - 按照正確順序
             const runningFramePaths = [
-                        'assets/character-run-1.svg',  // 索引0
-        'assets/character-run-2.svg',  // 索引1
-        'assets/character-run-3.svg',  // 索引2
-        'assets/character-run-4.svg'   // 索引3
+                        'Vibe Coding 組_SylviaSYLin遊戲介面/assets/character-run-1.svg',  // 索引0
+        'Vibe Coding 組_SylviaSYLin遊戲介面/assets/character-run-2.svg',  // 索引1
+        'Vibe Coding 組_SylviaSYLin遊戲介面/assets/character-run-3.svg',  // 索引2
+        'Vibe Coding 組_SylviaSYLin遊戲介面/assets/character-run-4.svg'   // 索引3
             ];
             
             let loadedCount = 0;
@@ -626,7 +630,7 @@
                 console.log('❌ 準備跳躍圖片載入失敗: jump-1.svg');
                 loadedCount++;
             };
-            jumpPrepareImg.src = 'assets/jump-1.svg';
+            jumpPrepareImg.src = 'Vibe Coding 組_SylviaSYLin遊戲介面/assets/jump-1.svg';
             
             // 載入跳躍圖片 (jump-2)
             const jumpImg = new Image();
@@ -642,7 +646,7 @@
                 console.log('❌ 跳躍圖片載入失敗: jump-2.svg');
                 loadedCount++;
             };
-            jumpImg.src = 'assets/jump-2.svg';
+            jumpImg.src = 'Vibe Coding 組_SylviaSYLin遊戲介面/assets/jump-2.svg';
         }
         
         // 移除上傳功能 - 直接使用指定的圖片文件
@@ -2004,10 +2008,10 @@
             
             if (gameOverImage && retryBtnContainer && retryBtnImage) {
                 // 預先載入 retry-btn 圖片
-                retryBtnImage.src = 'assets/retry-btn.svg';
+                retryBtnImage.src = 'Vibe Coding 組_SylviaSYLin遊戲介面/assets/retry-btn.svg';
                 
-                // 追蹤點擊次數的變數
-                let isProcessingClick = false; // 防止快速連續點擊
+                // 追蹤重試按鈕點擊的變數
+                let isProcessingRetryClick = false; // 防止快速連續點擊
 
                 // 創建調整圖片尺寸的函數
                 function adjustFailureImageSize() {
@@ -2067,12 +2071,12 @@
                     
                     // 添加點擊事件
                     retryBtnImage.addEventListener('click', function(event) {
-                        if (isProcessingClick) {
+                        if (isProcessingRetryClick) {
                             console.log('⚠️ 點擊處理中，請稍候...');
                             return;
                         }
                         
-                        isProcessingClick = true;
+                        isProcessingRetryClick = true;
                         console.log('🖱️ Retry Button clicked! 準備重新開始遊戲...');
                         
                         // 播放按鈕音效
@@ -2081,7 +2085,7 @@
                         // 延遲重新開始以讓音效播放
                         setTimeout(() => {
                             directRestartGame();
-                            isProcessingClick = false;
+                            isProcessingRetryClick = false;
                         }, 200);
                     });
                 }
@@ -2090,7 +2094,7 @@
                 gameOverImage.onload = adjustFailureImageSize;
                 
                 // 設定 game over 圖片來源以觸發 onload
-                gameOverImage.src = 'assets/game over.svg';
+                gameOverImage.src = 'Vibe Coding 組_SylviaSYLin遊戲介面/assets/game over.svg';
             }
         }
         
@@ -2134,11 +2138,9 @@
             
             if (story1Image && nextBtnContainer && nextBtnImage) {
                 // 預先載入 next-btn 圖片
-                nextBtnImage.src = 'assets/next-btn.svg';
+                nextBtnImage.src = 'Vibe Coding 組_SylviaSYLin遊戲介面/assets/next-btn.svg';
                 
-                // 追蹤點擊次數的變數
-                let clickCount = 0;
-                let isProcessingClick = false; // 防止快速連續點擊
+                // 使用全域變數 clickCount 和 isProcessingClick
 
                 // 創建調整圖片尺寸的函數
                 function adjustImageSize() {
@@ -2229,8 +2231,8 @@
                         
                         isProcessingClick = true;
                         
-                        // 檢查當前按鈕類型
-                        const isStartBtn = nextBtnImage.src.includes('assets/start-btn.svg');
+                        // 檢查當前按鈕類型（使用 endsWith 更可靠）
+                        const isStartBtn = nextBtnImage.src.endsWith('start-btn.svg');
                         console.log(`🖱️ Button clicked! 當前按鈕類型: ${isStartBtn ? 'start-btn' : 'next-btn'}, 處理中...`);
                         
                         if (isStartBtn) {
@@ -2246,7 +2248,7 @@
                             if (clickCount === 1) {
                                 // 第一次點擊：切換到 story-2
                                 story1Image.onload = adjustImageSize;
-                                story1Image.src = 'assets/story-2.svg';
+                                story1Image.src = 'Vibe Coding 組_SylviaSYLin遊戲介面/assets/story-2.svg';
                                 console.log('📄 切換到 story-2');
                                 
                                 // 延遲解鎖點擊
@@ -2258,12 +2260,12 @@
                             } else if (clickCount === 2) {
                                 // 第二次點擊：切換到 story-3 並改變按鈕圖片
                                 story1Image.onload = adjustImageSize;
-                                story1Image.src = 'assets/story-3.svg';
+                                story1Image.src = 'Vibe Coding 組_SylviaSYLin遊戲介面/assets/story-3.svg';
                                 
                                 // 延遲切換按鈕圖片，避免立即觸發事件
                                 setTimeout(() => {
                                     console.log('🔄 準備切換按鈕為 start-btn');
-                                    nextBtnImage.src = 'assets/start-btn.svg';
+                                    nextBtnImage.src = 'Vibe Coding 組_SylviaSYLin遊戲介面/assets/start-btn.svg';
                                     console.log('✅ 按鈕已切換為 start-btn');
                                     
                                     // 延遲解鎖點擊
@@ -2294,7 +2296,7 @@
                 story1Image.onload = adjustImageSize;
                 
                 // 設定 story-1 圖片來源以觸發 onload
-                story1Image.src = 'assets/story-1.svg';
+                story1Image.src = 'Vibe Coding 組_SylviaSYLin遊戲介面/assets/story-1.svg';
             }
         }
         
@@ -2358,7 +2360,7 @@
         // 按鈕音效管理函數
         function initButtonAudio() {
             try {
-                buttonAudio = new Audio('assets/sound/button.mp3');
+                buttonAudio = new Audio('Vibe Coding 組_SylviaSYLin遊戲介面/assets/sound/button.mp3');
                 buttonAudio.volume = buttonAudioVolume;
                 console.log('🔊 按鈕音效初始化完成（音量：' + (buttonAudioVolume * 100) + '%）');
             } catch (error) {
@@ -2378,7 +2380,7 @@
         
         function initJumpAudio() {
             try {
-                jumpAudio = new Audio('assets/sound/jump.mp3');
+                jumpAudio = new Audio('Vibe Coding 組_SylviaSYLin遊戲介面/assets/sound/jump.mp3');
                 jumpAudio.volume = jumpAudioVolume;
                 console.log('🔊 跳躍音效初始化完成（音量：' + (jumpAudioVolume * 100) + '%）');
             } catch (error) {
@@ -2398,7 +2400,7 @@
         
         function initHpLogoAudio() {
             try {
-                hpLogoAudio = new Audio('assets/sound/gethp.mp3');
+                hpLogoAudio = new Audio('Vibe Coding 組_SylviaSYLin遊戲介面/assets/sound/gethp.mp3');
                 hpLogoAudio.volume = hpLogoAudioVolume;
                 console.log('🔊 HP Logo 音效初始化完成（音量：' + (hpLogoAudioVolume * 100) + '%）');
             } catch (error) {
@@ -2418,7 +2420,7 @@
         
         function initRunningAudio() {
             try {
-                runningAudio = new Audio('assets/sound/running.mp3');
+                runningAudio = new Audio('Vibe Coding 組_SylviaSYLin遊戲介面/assets/sound/running.mp3');
                 runningAudio.volume = runningAudioVolume;
                 runningAudio.loop = true; // 跑步音效循環播放
                 console.log('🔊 跑步音效初始化完成（音量：' + (runningAudioVolume * 100) + '%）');
@@ -2451,7 +2453,7 @@
         
         function initEndAudio() {
             try {
-                endAudio = new Audio('assets/sound/end.mp3');
+                endAudio = new Audio('Vibe Coding 組_SylviaSYLin遊戲介面/assets/sound/end.mp3');
                 endAudio.volume = endAudioVolume;
                 console.log('🔊 結束音效初始化完成（音量：' + (endAudioVolume * 100) + '%）');
             } catch (error) {
@@ -2471,7 +2473,7 @@
         
         function initCloudAudio() {
             try {
-                cloudAudio = new Audio('assets/sound/light.mp3');
+                cloudAudio = new Audio('Vibe Coding 組_SylviaSYLin遊戲介面/assets/sound/light.mp3');
                 cloudAudio.volume = cloudAudioVolume;
                 console.log('🔊 Cloud 音效初始化完成（音量：' + (cloudAudioVolume * 100) + '%）');
             } catch (error) {
@@ -2523,7 +2525,7 @@
         // Born 音效管理函數
         function initBornAudio() {
             try {
-                bornAudio = new Audio('assets/sound/born.mp3');
+                bornAudio = new Audio('Vibe Coding 組_SylviaSYLin遊戲介面/assets/sound/born.mp3');
                 bornAudio.volume = bornAudioVolume;
                 bornAudio.loop = true; // 設定循環播放
                 console.log('🔊 Born 音效初始化完成（音量：' + (bornAudioVolume * 100) + '%，循環播放）');
@@ -2564,7 +2566,7 @@
             console.log('🎬 開始初始化結局影片元素...');
             
             endingVideo = document.createElement('video');
-            endingVideo.src = 'assets/ending_animation.mp4';
+            endingVideo.src = 'Vibe Coding 組_SylviaSYLin遊戲介面/assets/ending_animation.mp4';
             endingVideo.controls = false; // 隱藏所有控制界面
             endingVideo.style.position = 'fixed';
             endingVideo.style.top = '0';
@@ -2603,7 +2605,7 @@
             endingVideo.onerror = function(e) {
                 console.error('❌ 結局影片加載失敗:', e);
                 console.error('❌ 影片路徑:', endingVideo.src);
-                alert('結局影片加載失敗，請確認 assets/ending_animation.mp4 文件存在\n路徑: ' + endingVideo.src);
+                alert('結局影片加載失敗，請確認 Vibe Coding 組_SylviaSYLin遊戲介面/assets/ending_animation.mp4 文件存在\n路徑: ' + endingVideo.src);
             };
             
             // 測試：嘗試預加載影片
@@ -2634,7 +2636,7 @@
                     console.log('🎬 結局影片播放成功開始！');
                 }).catch(e => {
                     console.error('❌ 結局影片播放失敗:', e);
-                    alert('結局影片播放失敗: ' + e.message + '\n請確認 assets/ending_animation.mp4 檔案存在且可播放');
+                    alert('結局影片播放失敗: ' + e.message + '\n請確認 Vibe Coding 組_SylviaSYLin遊戲介面/assets/ending_animation.mp4 檔案存在且可播放');
                 });
                 
                 // 暫停遊戲主循環
@@ -2669,7 +2671,7 @@
             // 創建圖片元素（與影片尺寸完全相同）
             const gifImage = document.createElement('img');
             gifImage.id = 'endingGifImage';
-            gifImage.src = 'assets/pass-1.png';
+            gifImage.src = 'Vibe Coding 組_SylviaSYLin遊戲介面/assets/pass-1.png';
             gifImage.style.position = 'fixed';
             gifImage.style.top = '0';
             gifImage.style.left = '0';
@@ -2682,7 +2684,7 @@
             // 創建重玩按鈕（精確定位）
             const retryButton = document.createElement('img');
             retryButton.id = 'endingRetryButton';
-            retryButton.src = 'assets/retry-btn-2.svg';
+            retryButton.src = 'Vibe Coding 組_SylviaSYLin遊戲介面/assets/retry-btn-2.svg';
             retryButton.style.position = 'fixed';
             retryButton.style.cursor = 'pointer';
             retryButton.style.transition = 'transform 0.2s ease';
@@ -2714,9 +2716,9 @@
                 stopBornAudio();
                 
                 try {
-                    restartGame();
+                    directRestartGame();
                 } catch (error) {
-                    console.error('❌ restartGame 執行失敗:', error);
+                    console.error('❌ directRestartGame 執行失敗:', error);
                     // 備用重置方案
                     emergencyRestart();
                 }
@@ -2734,7 +2736,7 @@
                 stopBornAudio();
                 
                 try {
-                    restartGame();
+                    directRestartGame();
                 } catch (error) {
                     emergencyRestart();
                 }
@@ -2816,7 +2818,7 @@
             };
             
             // 載入 pass-1 圖片來取得實際尺寸
-            tempImg.src = 'assets/pass-1.png';
+            tempImg.src = 'Vibe Coding 組_SylviaSYLin遊戲介面/assets/pass-1.png';
         }
         
         function showEndingGif() {
@@ -2829,8 +2831,8 @@
             // 預先載入圖片以避免閃爍
             const preloadImage1 = new Image();
             const preloadImage2 = new Image();
-            preloadImage1.src = 'assets/pass-1.png';
-            preloadImage2.src = 'assets/pass-2.png';
+            preloadImage1.src = 'Vibe Coding 組_SylviaSYLin遊戲介面/assets/pass-1.png';
+            preloadImage2.src = 'Vibe Coding 組_SylviaSYLin遊戲介面/assets/pass-2.png';
             
             // 等待圖片載入完成後再顯示
             Promise.all([
@@ -2847,7 +2849,7 @@
                 const gifImage = document.getElementById('endingGifImage');
                 if (gifImage) {
                     gifImage.style.opacity = '1'; // 直接顯示，不淡入
-                    gifImage.src = 'assets/pass-1.png';
+                    gifImage.src = 'Vibe Coding 組_SylviaSYLin遊戲介面/assets/pass-1.png';
                 }
                 
                 // 開始播放 Born 音效（循環播放）
@@ -2889,9 +2891,9 @@
                 currentGifFrame = currentGifFrame === 1 ? 2 : 1;
                 const nextImage = new Image();
                 nextImage.onload = function() {
-                    gifImage.src = `assets/pass-${currentGifFrame}.png`;
+                    gifImage.src = `Vibe Coding 組_SylviaSYLin遊戲介面/assets/pass-${currentGifFrame}.png`;
                 };
-                nextImage.src = `assets/pass-${currentGifFrame}.png`;
+                nextImage.src = `Vibe Coding 組_SylviaSYLin遊戲介面/assets/pass-${currentGifFrame}.png`;
             }, 1000);
         }
         
@@ -2920,6 +2922,10 @@
             gameState = 'intro';
             endingState.victoryTriggered = false;
             endingState.videoPlayed = false;
+            
+            // 重置前言系統狀態
+            clickCount = 0;
+            isProcessingClick = false;
             
             // 重置玩家位置和狀態
             player.x = 100;
@@ -2958,11 +2964,21 @@
                 lightningManager2.reset();
             }
             
+            // 重置前言畫面的圖片和按鈕
+            const story1Image = document.getElementById('story1Image');
+            const nextBtnImage = document.getElementById('nextBtnImage');
+            if (story1Image) {
+                story1Image.src = 'Vibe Coding 組_SylviaSYLin遊戲介面/assets/story-1.svg';
+            }
+            if (nextBtnImage) {
+                nextBtnImage.src = 'Vibe Coding 組_SylviaSYLin遊戲介面/assets/next-btn.svg';
+            }
+            
             // 顯示前言畫面
             const introModal = document.getElementById('introModal');
             if (introModal) {
                 introModal.style.display = 'flex';
-                console.log('📖 前言畫面已顯示');
+                console.log('📖 前言畫面已顯示，已重置為 story-1');
             } else {
                 console.error('❌ 找不到 introModal 元素');
             }
@@ -3026,7 +3042,7 @@
             
             // 創建 pass-btn 按鈕
             const passButton = document.createElement('img');
-            passButton.src = 'assets/pass-btn.svg';
+            passButton.src = 'Vibe Coding 組_SylviaSYLin遊戲介面/assets/pass-btn.svg';
             passButton.style.width = '200px';
             passButton.style.height = 'auto';
             passButton.style.cursor = 'pointer';
@@ -3073,7 +3089,7 @@
         // 音樂管理函數
         function initGameBGM() {
             try {
-                gameBGM = new Audio('assets/sound/game-bgm.mp3');
+                gameBGM = new Audio('Vibe Coding 組_SylviaSYLin遊戲介面/assets/sound/game-bgm.mp3');
                 gameBGM.volume = musicVolume; // 直接設定為完整音量
                 gameBGM.loop = true; // 無限循環
                 console.log('🎵 背景音樂初始化完成（音量：' + (musicVolume * 100) + '%）');
@@ -3641,6 +3657,10 @@
             
             gameState = 'playing'; // 直接進入遊戲狀態
             
+            // 重置結局狀態
+            endingState.victoryTriggered = false;
+            endingState.videoPlayed = false;
+            
             // 動態計算角色大小
             const playerSize = calculatePlayerSize();
             
@@ -3707,10 +3727,22 @@
                 fadeInterval = null;
             }
             
-            // 關閉所有模態框
+            // 關閉所有模態框和結局元素
             document.getElementById('endingModal').style.display = 'none';
             document.getElementById('failureModal').style.display = 'none';
             document.getElementById('introModal').style.display = 'none';
+            
+            // 關閉結局相關元素
+            if (endingVideo) {
+                endingVideo.style.display = 'none';
+            }
+            if (endingGifContainer) {
+                endingGifContainer.style.display = 'none';
+            }
+            
+            // 停止結局相關音效和動畫
+            stopBornAudio();
+            stopGifAnimation();
             
             // 重新初始化並播放背景音樂
             initGameBGM();
@@ -3858,7 +3890,7 @@
                             this.imagesLoaded = true;
                         }
                     };
-                    img.src = `assets/${type}.svg`;
+                    img.src = `Vibe Coding 組_SylviaSYLin遊戲介面/assets/${type}.svg`;
                 });
             }
 
@@ -4049,7 +4081,7 @@
                             this.imagesLoaded = true;
                         }
                     };
-                    img.src = `assets/${type}.svg`;
+                    img.src = `Vibe Coding 組_SylviaSYLin遊戲介面/assets/${type}.svg`;
                 });
             }
 
@@ -4238,7 +4270,7 @@
                             this.imagesLoaded = true;
                         }
                     };
-                    img.src = `assets/${type}.svg`;
+                    img.src = `Vibe Coding 組_SylviaSYLin遊戲介面/assets/${type}.svg`;
                 });
             }
 
@@ -4519,7 +4551,7 @@
                             this.imagesLoaded = true;
                         }
                     };
-                    img.src = `assets/${type}.svg`;
+                    img.src = `Vibe Coding 組_SylviaSYLin遊戲介面/assets/${type}.svg`;
                 });
             }
 
@@ -4795,7 +4827,7 @@
                             this.imagesLoaded = true;
                         }
                     };
-                    img.src = `assets/${type}.svg`;
+                    img.src = `Vibe Coding 組_SylviaSYLin遊戲介面/assets/${type}.svg`;
                 });
             }
 
@@ -5075,7 +5107,7 @@
                     console.log('❌ HP Logo圖片載入失敗: hp-logo.svg');
                     this.imageLoaded = false;
                 };
-                this.image.src = 'assets/hp-logo.svg';
+                this.image.src = 'Vibe Coding 組_SylviaSYLin遊戲介面/assets/hp-logo.svg';
             }
 
             // 創建HP Logo（水平排列）
@@ -5293,7 +5325,7 @@
                         }
                     }
                 };
-                img.src = `assets/${type}.svg`;
+                img.src = `Vibe Coding 組_SylviaSYLin遊戲介面/assets/${type}.svg`;
             });
         }
 
@@ -5552,7 +5584,7 @@
                             this.createHearts();
                         }
                     };
-                    img.src = `assets/${type}.svg`;
+                    img.src = `Vibe Coding 組_SylviaSYLin遊戲介面/assets/${type}.svg`;
                 });
             }
 
