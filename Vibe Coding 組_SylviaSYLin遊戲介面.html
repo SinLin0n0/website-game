@@ -2837,37 +2837,39 @@
                 new Promise(resolve => preloadImage1.onload = resolve),
                 new Promise(resolve => preloadImage2.onload = resolve)
             ]).then(() => {
-                // 隱藏影片，顯示 GIF 容器
-                if (endingVideo) {
-                    endingVideo.style.display = 'none';
-                }
-                
+                // 先準備 GIF 容器和圖片，但保持在影片後面
                 endingGifContainer.style.display = 'flex';
                 endingGifContainer.style.pointerEvents = 'none'; // 確保容器不阻擋點擊
+                endingGifContainer.style.zIndex = '9998'; // 暫時放在影片後面
+                
+                // 重置到第一幀並立即設置圖片
+                currentGifFrame = 1;
+                const gifImage = document.getElementById('endingGifImage');
+                if (gifImage) {
+                    gifImage.style.opacity = '1'; // 直接顯示，不淡入
+                    gifImage.src = 'assets/pass-1.png';
+                }
                 
                 // 開始播放 Born 音效（循環播放）
                 playBornAudio();
                 
-                // 重置到第一幀
-                currentGifFrame = 1;
-                const gifImage = document.getElementById('endingGifImage');
-                if (gifImage) {
-                    gifImage.style.opacity = '0'; // 先設為透明
-                    gifImage.src = 'assets/pass-1.png';
-                    // 圖片載入完成後淡入
-                    gifImage.onload = function() {
-                        gifImage.style.opacity = '1';
-                    };
-                }
-                
-                // 重新計算按鈕位置（防止視窗尺寸變化）
-                const retryButton = document.getElementById('endingRetryButton');
-                if (retryButton) {
-                    calculateRetryButtonPosition(retryButton);
-                }
-                
-                // 開始 GIF 動畫
-                startGifAnimation();
+                // 短暫延遲後再隱藏影片，確保 GIF 已經準備好
+                setTimeout(() => {
+                    if (endingVideo) {
+                        endingVideo.style.display = 'none';
+                    }
+                    // 將 GIF 容器移到最前面
+                    endingGifContainer.style.zIndex = '9999';
+                    
+                    // 重新計算按鈕位置（防止視窗尺寸變化）
+                    const retryButton = document.getElementById('endingRetryButton');
+                    if (retryButton) {
+                        calculateRetryButtonPosition(retryButton);
+                    }
+                    
+                    // 開始 GIF 動畫
+                    startGifAnimation();
+                }, 50); // 50ms 延遲，幾乎察覺不到但足夠讓 GIF 準備好
             });
         }
         
