@@ -435,6 +435,11 @@
         let isCloudAudioPlaying = false; // 追蹤 Cloud 音效是否正在播放
         let cloudAudioPlayCount = 0; // 追蹤播放次數
         
+        // Born 音效管理
+        let bornAudio = null;
+        let bornAudioVolume = 0.6; // Born 音效音量40%
+        let isBornAudioPlaying = false; // 追蹤 Born 音效是否正在播放
+        
         // 背景圖片變數
         let backgroundImage = null;
         let backgroundWidth = 0;
@@ -693,6 +698,7 @@
             initRunningAudio();
             initEndAudio();
             initCloudAudio();
+            initBornAudio();
             
 
             
@@ -2514,6 +2520,42 @@
             }
         }
         
+        // Born 音效管理函數
+        function initBornAudio() {
+            try {
+                bornAudio = new Audio('assets/sound/born.mp3');
+                bornAudio.volume = bornAudioVolume;
+                bornAudio.loop = true; // 設定循環播放
+                console.log('🔊 Born 音效初始化完成（音量：' + (bornAudioVolume * 100) + '%，循環播放）');
+            } catch (error) {
+                console.log('🚫 Born 音效初始化失敗:', error);
+            }
+        }
+        
+        function playBornAudio() {
+            if (bornAudio && !isBornAudioPlaying) {
+                isBornAudioPlaying = true;
+                bornAudio.currentTime = 0; // 重置播放位置
+                bornAudio.volume = bornAudioVolume; // 確保音量正確
+                
+                bornAudio.play().then(() => {
+                    console.log('🎵 Born 音效開始循環播放');
+                }).catch(e => {
+                    console.log('🚫 Born 音效播放失敗:', e);
+                    isBornAudioPlaying = false;
+                });
+            }
+        }
+        
+        function stopBornAudio() {
+            if (bornAudio && isBornAudioPlaying) {
+                bornAudio.pause();
+                bornAudio.currentTime = 0;
+                isBornAudioPlaying = false;
+                console.log('🔇 Born 音效已停止');
+            }
+        }
+        
         // ===============================
         // 結局影片管理函數
         // ===============================
@@ -2668,6 +2710,9 @@
                     endingGifContainer.style.display = 'none';
                 }
                 
+                // 停止 Born 音效
+                stopBornAudio();
+                
                 try {
                     restartGame();
                 } catch (error) {
@@ -2684,6 +2729,10 @@
                 if (endingGifContainer) {
                     endingGifContainer.style.display = 'none';
                 }
+                
+                // 停止 Born 音效
+                stopBornAudio();
+                
                 try {
                     restartGame();
                 } catch (error) {
@@ -2795,6 +2844,9 @@
                 
                 endingGifContainer.style.display = 'flex';
                 endingGifContainer.style.pointerEvents = 'none'; // 確保容器不阻擋點擊
+                
+                // 開始播放 Born 音效（循環播放）
+                playBornAudio();
                 
                 // 重置到第一幀
                 currentGifFrame = 1;
