@@ -278,6 +278,58 @@
         .hidden {
             display: none !important;
         }
+        
+        /* 完全隱藏影片控制界面 */
+        video::-webkit-media-controls {
+            display: none !important;
+        }
+        
+        video::-webkit-media-controls-panel {
+            display: none !important;
+        }
+        
+        video::-webkit-media-controls-play-button {
+            display: none !important;
+        }
+        
+        video::-webkit-media-controls-volume-slider {
+            display: none !important;
+        }
+        
+        video::-webkit-media-controls-mute-button {
+            display: none !important;
+        }
+        
+        video::-webkit-media-controls-timeline {
+            display: none !important;
+        }
+        
+        video::-webkit-media-controls-current-time-display {
+            display: none !important;
+        }
+        
+        video::-webkit-media-controls-time-remaining-display {
+            display: none !important;
+        }
+        
+        video::-webkit-media-controls-fullscreen-button {
+            display: none !important;
+        }
+        
+        video::-webkit-media-controls-overlay-play-button {
+            display: none !important;
+        }
+        
+        video::-moz-media-controls {
+            display: none !important;
+        }
+        
+        /* 確保影片元素本身不顯示任何邊框或焦點輪廓 */
+        video {
+            outline: none !important;
+            border: none !important;
+        }
+        
     </style>
 </head>
 <body>
@@ -337,6 +389,17 @@
         let victoryStartTime = null;
         let victoryDuration = 2000;
         let gameLoopId = null;
+        
+        // 結局相關變數
+        let endingState = {
+            victoryTriggered: false,      // 是否已觸發勝利
+            videoPlayed: false            // 是否已播放過影片
+        };
+        
+        let endingVideo = null; // 結局影片元素
+        let endingGifContainer = null; // 結局 GIF 動畫容器
+        let gifAnimationInterval = null; // GIF 動畫間隔計時器
+        let currentGifFrame = 1; // 當前 GIF 幀（1 或 2）
         
         // 音樂管理系統
         let gameBGM = null;
@@ -631,8 +694,11 @@
             initEndAudio();
             initCloudAudio();
             
+
+            
             gameLoop(); // 啟動遊戲循環以顯示前言背景
         }
+
         
         // 更新Canvas尺寸
         function updateCanvasSize() {
@@ -2448,6 +2514,507 @@
             }
         }
         
+        // ===============================
+        // 結局影片管理函數
+        // ===============================
+        
+        function initEndingVideo() {
+            console.log('🎬 開始初始化結局影片元素...');
+            
+            endingVideo = document.createElement('video');
+            endingVideo.src = 'assets/ending_animation.mp4';
+            endingVideo.controls = false; // 隱藏所有控制界面
+            endingVideo.style.position = 'fixed';
+            endingVideo.style.top = '0';
+            endingVideo.style.left = '0';
+            endingVideo.style.width = '100vw';
+            endingVideo.style.height = '100vh';
+            endingVideo.style.objectFit = 'contain';
+            endingVideo.style.backgroundColor = 'black';
+            endingVideo.style.zIndex = '9999';
+            endingVideo.style.display = 'none';
+            
+            // 完全隱藏影片控制界面
+            endingVideo.style.outline = 'none';
+            endingVideo.style.border = 'none';
+            endingVideo.setAttribute('disablePictureInPicture', '');
+            endingVideo.setAttribute('controlsList', 'nodownload nofullscreen noremoteplayback');
+            
+            // 禁用右鍵選單
+            endingVideo.oncontextmenu = function(e) {
+                e.preventDefault();
+                return false;
+            };
+            
+            // 影片加載成功處理
+            endingVideo.onloadeddata = function() {
+                console.log('🎬 結局影片加載成功！');
+            };
+            
+            // 影片結束後的處理
+            endingVideo.onended = function() {
+                console.log('🎬 結局影片播放完畢，開始顯示 GIF 動畫');
+                showEndingGif();
+            };
+            
+            // 影片加載錯誤處理
+            endingVideo.onerror = function(e) {
+                console.error('❌ 結局影片加載失敗:', e);
+                console.error('❌ 影片路徑:', endingVideo.src);
+                alert('結局影片加載失敗，請確認 assets/ending_animation.mp4 文件存在\n路徑: ' + endingVideo.src);
+            };
+            
+            // 測試：嘗試預加載影片
+            endingVideo.preload = 'metadata';
+            
+            document.body.appendChild(endingVideo);
+            console.log('🎬 結局影片元素已添加到頁面');
+            console.log('🎬 影片元素:', endingVideo);
+            console.log('🎬 影片路徑:', endingVideo.src);
+        }
+        
+        function playEndingVideo() {
+            console.log('🎬 開始播放結局影片');
+            
+            if (!endingVideo) {
+                console.log('🎬 初始化結局影片元素...');
+                initEndingVideo();
+            }
+            
+            if (!endingState.videoPlayed) {
+                endingState.videoPlayed = true;
+                
+                // 顯示影片並開始播放
+                endingVideo.style.display = 'block';
+                console.log('🎬 影片元素已顯示，開始播放...');
+                
+                endingVideo.play().then(() => {
+                    console.log('🎬 結局影片播放成功開始！');
+                }).catch(e => {
+                    console.error('❌ 結局影片播放失敗:', e);
+                    alert('結局影片播放失敗: ' + e.message + '\n請確認 assets/ending_animation.mp4 檔案存在且可播放');
+                });
+                
+                // 暫停遊戲背景音樂（如果有的話）
+                if (gameBGM && !gameBGM.paused) {
+                    gameBGM.pause();
+                    console.log('🎵 背景音樂已暫停');
+                }
+                
+                // 暫停遊戲主循環
+                if (gameLoopId) {
+                    cancelAnimationFrame(gameLoopId);
+                    console.log('🎮 遊戲主循環已暫停');
+                }
+            } else {
+                console.log('🎬 影片已經播放過了');
+            }
+        }
+        
+        // ===============================
+        // 結局 GIF 動畫系統
+        // ===============================
+        
+        function initEndingGif() {
+            console.log('🎞️ 初始化結局 GIF 動畫容器...');
+            
+            // 創建 GIF 動畫容器
+            endingGifContainer = document.createElement('div');
+            endingGifContainer.style.position = 'fixed';
+            endingGifContainer.style.top = '0';
+            endingGifContainer.style.left = '0';
+            endingGifContainer.style.width = '100vw';
+            endingGifContainer.style.height = '100vh';
+            endingGifContainer.style.backgroundColor = 'black';
+            endingGifContainer.style.zIndex = '9999';
+            endingGifContainer.style.display = 'none';
+            endingGifContainer.style.pointerEvents = 'none'; // 容器不阻擋點擊
+            
+            // 創建圖片元素（與影片尺寸完全相同）
+            const gifImage = document.createElement('img');
+            gifImage.id = 'endingGifImage';
+            gifImage.src = 'assets/pass-1.png';
+            gifImage.style.position = 'fixed';
+            gifImage.style.top = '0';
+            gifImage.style.left = '0';
+            gifImage.style.width = '100vw';
+            gifImage.style.height = '100vh';
+            gifImage.style.objectFit = 'contain';
+            gifImage.style.backgroundColor = 'black';
+            gifImage.style.transition = 'opacity 0.1s ease'; // 添加淡入效果
+            
+            // 創建重玩按鈕（精確定位）
+            const retryButton = document.createElement('img');
+            retryButton.id = 'endingRetryButton';
+            retryButton.src = 'assets/retry-btn-2.svg';
+            retryButton.style.position = 'fixed';
+            retryButton.style.cursor = 'pointer';
+            retryButton.style.transition = 'transform 0.2s ease';
+            retryButton.style.zIndex = '10000';
+            retryButton.style.pointerEvents = 'auto'; // 確保按鈕可以被點擊
+            
+            // 動態計算按鈕尺寸和位置
+            calculateRetryButtonPosition(retryButton);
+            
+            // 按鈕懸停效果（保持居中對齊）
+            retryButton.onmouseover = function() {
+                retryButton.style.transform = 'translateX(-50%) scale(1.1)';
+            };
+            retryButton.onmouseout = function() {
+                retryButton.style.transform = 'translateX(-50%) scale(1)';
+            };
+            
+            // 點擊重玩
+            retryButton.onclick = function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // 立即隱藏 GIF 容器以免阻擋
+                if (endingGifContainer) {
+                    endingGifContainer.style.display = 'none';
+                }
+                
+                try {
+                    restartGame();
+                } catch (error) {
+                    console.error('❌ restartGame 執行失敗:', error);
+                    // 備用重置方案
+                    emergencyRestart();
+                }
+            };
+            
+            // 添加觸摸事件支持（移動設備）
+            retryButton.ontouchstart = function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (endingGifContainer) {
+                    endingGifContainer.style.display = 'none';
+                }
+                try {
+                    restartGame();
+                } catch (error) {
+                    emergencyRestart();
+                }
+            };
+            
+            // 組裝容器
+            endingGifContainer.appendChild(gifImage);
+            endingGifContainer.appendChild(retryButton);
+            document.body.appendChild(endingGifContainer);
+            
+            // 監聽視窗尺寸變化，重新計算按鈕位置
+            window.addEventListener('resize', () => {
+                if (endingGifContainer.style.display === 'flex') {
+                    calculateRetryButtonPosition(retryButton);
+                }
+            });
+            
+            console.log('🎞️ 結局 GIF 動畫容器初始化完成');
+        }
+        
+        function calculateRetryButtonPosition(retryButton) {
+            // 使用與 game over 時 retry-btn 相同的距離邏輯，但保持原本的按鈕尺寸設定
+            const windowHeight = window.innerHeight;
+            const windowWidth = window.innerWidth;
+            
+            // 使用與 game over retry-btn 相同的基準距離和比例
+            const storyBgHeight = 512; // 與 game over 計算中使用的基準高度相同
+            const baseDistance = 16; // 與 game over retry-btn 相同的基準距離
+            const distanceRatio = baseDistance / storyBgHeight;
+            const distanceFromImage = Math.floor(windowHeight * distanceRatio);
+            
+            // 設置按鈕尺寸（保持原本的動態設定）
+            const buttonHeight = Math.floor(windowHeight * 0.08); // 大約佔螢幕高度的8%
+            retryButton.style.height = buttonHeight + 'px';
+            retryButton.style.width = 'auto'; // 保持比例
+            
+            console.log(`🔧 按鈕尺寸設定: ${buttonHeight}px 高度`);
+            
+            // 透過載入一個臨時圖片來取得實際的 pass-1 圖片尺寸
+            const tempImg = new Image();
+            tempImg.onload = function() {
+                const imgAspectRatio = this.width / this.height;
+                const screenAspectRatio = windowWidth / windowHeight;
+                
+                let actualImageWidth, actualImageHeight, imageTop;
+                
+                if (imgAspectRatio > screenAspectRatio) {
+                    // 圖片較寬，以寬度為準
+                    actualImageWidth = windowWidth;
+                    actualImageHeight = windowWidth / imgAspectRatio;
+                    imageTop = (windowHeight - actualImageHeight) / 2;
+                } else {
+                    // 圖片較高，以高度為準
+                    actualImageHeight = windowHeight;
+                    actualImageWidth = windowHeight * imgAspectRatio;
+                    imageTop = 0;
+                }
+                
+                // 計算圖片底部位置
+                const imageBottom = imageTop + actualImageHeight;
+                
+                // 使用與 game over retry-btn 相同的位置邏輯
+                const buttonTop = imageBottom + distanceFromImage;
+                
+                console.log(`📍 按鈕位置計算: 圖片底部=${imageBottom}px, 距離=${distanceFromImage}px, 按鈕頂部=${buttonTop}px`);
+                
+                // 確保按鈕不會超出螢幕，離底部至少40像素
+                const minBottomMargin = 100;
+                const maxButtonTop = windowHeight - buttonHeight - minBottomMargin;
+                const safeButtonTop = Math.min(buttonTop, maxButtonTop);
+                
+                // 水平居中
+                retryButton.style.left = '50%';
+                retryButton.style.top = safeButtonTop + 'px';
+                retryButton.style.transform = 'translateX(-50%)';
+                retryButton.style.display = 'block'; // 確保按鈕顯示
+                
+                console.log(`✅ 按鈕最終位置: top=${safeButtonTop}px, 離底部=${windowHeight - safeButtonTop - buttonHeight}px`);
+            };
+            
+            // 載入 pass-1 圖片來取得實際尺寸
+            tempImg.src = 'assets/pass-1.png';
+        }
+        
+        function showEndingGif() {
+            console.log('🎞️ 顯示結局 GIF 動畫');
+            
+            if (!endingGifContainer) {
+                initEndingGif();
+            }
+            
+            // 預先載入圖片以避免閃爍
+            const preloadImage1 = new Image();
+            const preloadImage2 = new Image();
+            preloadImage1.src = 'assets/pass-1.png';
+            preloadImage2.src = 'assets/pass-2.png';
+            
+            // 等待圖片載入完成後再顯示
+            Promise.all([
+                new Promise(resolve => preloadImage1.onload = resolve),
+                new Promise(resolve => preloadImage2.onload = resolve)
+            ]).then(() => {
+                // 隱藏影片，顯示 GIF 容器
+                if (endingVideo) {
+                    endingVideo.style.display = 'none';
+                }
+                
+                endingGifContainer.style.display = 'flex';
+                endingGifContainer.style.pointerEvents = 'none'; // 確保容器不阻擋點擊
+                
+                // 重置到第一幀
+                currentGifFrame = 1;
+                const gifImage = document.getElementById('endingGifImage');
+                if (gifImage) {
+                    gifImage.style.opacity = '0'; // 先設為透明
+                    gifImage.src = 'assets/pass-1.png';
+                    // 圖片載入完成後淡入
+                    gifImage.onload = function() {
+                        gifImage.style.opacity = '1';
+                    };
+                }
+                
+                // 重新計算按鈕位置（防止視窗尺寸變化）
+                const retryButton = document.getElementById('endingRetryButton');
+                if (retryButton) {
+                    calculateRetryButtonPosition(retryButton);
+                }
+                
+                // 開始 GIF 動畫
+                startGifAnimation();
+            });
+        }
+        
+        function startGifAnimation() {
+            console.log('🎞️ 開始 GIF 動畫循環');
+            
+            const gifImage = document.getElementById('endingGifImage');
+            if (!gifImage) return;
+            
+            // 停止任何現有的動畫
+            if (gifAnimationInterval) {
+                clearInterval(gifAnimationInterval);
+            }
+            
+            // 每1秒切換圖片（無閃爍切換）
+            gifAnimationInterval = setInterval(() => {
+                currentGifFrame = currentGifFrame === 1 ? 2 : 1;
+                const nextImage = new Image();
+                nextImage.onload = function() {
+                    gifImage.src = `assets/pass-${currentGifFrame}.png`;
+                };
+                nextImage.src = `assets/pass-${currentGifFrame}.png`;
+            }, 1000);
+        }
+        
+        function stopGifAnimation() {
+            if (gifAnimationInterval) {
+                clearInterval(gifAnimationInterval);
+                gifAnimationInterval = null;
+            }
+        }
+        
+        function restartGame() {
+            console.log('🔄 重新開始遊戲...');
+            
+            // 停止 GIF 動畫
+            stopGifAnimation();
+            
+            // 隱藏所有結局相關元素
+            if (endingVideo) {
+                endingVideo.style.display = 'none';
+            }
+            if (endingGifContainer) {
+                endingGifContainer.style.display = 'none';
+            }
+            
+            // 重置遊戲狀態
+            gameState = 'intro';
+            endingState.victoryTriggered = false;
+            endingState.videoPlayed = false;
+            
+            // 重置玩家位置和狀態
+            player.x = 100;
+            player.y = 0;
+            player.velocityX = 0;
+            player.velocityY = 0;
+            player.controlDisabled = false;
+            player.alpha = 1;
+            
+            // 重置攝影機
+            camera.x = 0;
+            camera.y = 0;
+            
+            // 重新創建世界
+            createWorld();
+            
+            // 重置心臟管理器
+            if (typeof heartManager !== 'undefined') {
+                heartManager.reset();
+            }
+            
+            // 重置其他管理器
+            if (typeof springManager !== 'undefined') {
+                springManager.reset();
+            }
+            if (typeof cloudManager !== 'undefined') {
+                cloudManager.reset();
+            }
+            if (typeof cloudManager2 !== 'undefined') {
+                cloudManager2.reset();
+            }
+            if (typeof lightningManager !== 'undefined') {
+                lightningManager.reset();
+            }
+            if (typeof lightningManager2 !== 'undefined') {
+                lightningManager2.reset();
+            }
+            
+            // 顯示前言畫面
+            const introModal = document.getElementById('introModal');
+            if (introModal) {
+                introModal.style.display = 'flex';
+                console.log('📖 前言畫面已顯示');
+            } else {
+                console.error('❌ 找不到 introModal 元素');
+            }
+            
+            // 重新開始遊戲循環
+            if (gameLoopId) {
+                cancelAnimationFrame(gameLoopId);
+            }
+            gameLoop();
+            
+            // 重新開始背景音樂
+            if (gameBGM) {
+                gameBGM.currentTime = 0;
+                gameBGM.play().catch(e => {
+                    console.log('🎵 背景音樂重新播放失敗:', e);
+                });
+            }
+            
+            console.log('🔄 遊戲重新開始完成');
+        }
+        
+        // 備用重置方案
+        function emergencyRestart() {
+            console.log('🚨 執行備用重置方案...');
+            
+            // 強制重新載入頁面
+            location.reload();
+        }
+        
+        // ===============================
+        // 通關提示系統
+        // ===============================
+        
+        function showVictoryModal() {
+            console.log('🎉 顯示通關提示');
+            
+            // 創建通關背景遮罩
+            const victoryModal = document.createElement('div');
+            victoryModal.id = 'victoryModal';
+            victoryModal.style.position = 'fixed';
+            victoryModal.style.top = '0';
+            victoryModal.style.left = '0';
+            victoryModal.style.width = '100%';
+            victoryModal.style.height = '100%';
+            victoryModal.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+            victoryModal.style.display = 'flex';
+            victoryModal.style.justifyContent = 'center';
+            victoryModal.style.alignItems = 'center';
+            victoryModal.style.zIndex = '9998';
+            victoryModal.style.flexDirection = 'column';
+            
+            // 創建通關文字
+            const victoryText = document.createElement('div');
+            victoryText.innerHTML = '成功送達';
+            victoryText.style.color = 'white';
+            victoryText.style.fontSize = '48px';
+            victoryText.style.fontFamily = 'Press Start 2P, monospace';
+            victoryText.style.textAlign = 'center';
+            victoryText.style.marginBottom = '40px';
+            victoryText.style.textShadow = '2px 2px 4px rgba(0,0,0,0.8)';
+            
+            // 創建 pass-btn 按鈕
+            const passButton = document.createElement('img');
+            passButton.src = 'assets/pass-btn.svg';
+            passButton.style.width = '200px';
+            passButton.style.height = 'auto';
+            passButton.style.cursor = 'pointer';
+            passButton.style.transition = 'transform 0.2s ease';
+            
+            // 按鈕懸停效果
+            passButton.onmouseover = function() {
+                passButton.style.transform = 'scale(1.1)';
+            };
+            passButton.onmouseout = function() {
+                passButton.style.transform = 'scale(1)';
+            };
+            
+            // 點擊按鈕播放影片
+            passButton.onclick = function() {
+                console.log('🎬 Pass 按鈕被點擊，開始播放結局影片');
+                hideVictoryModal();
+                playEndingVideo();
+            };
+            
+            // 組裝模態框
+            victoryModal.appendChild(victoryText);
+            victoryModal.appendChild(passButton);
+            document.body.appendChild(victoryModal);
+            
+            console.log('🎉 通關提示顯示完成');
+        }
+        
+        function hideVictoryModal() {
+            const victoryModal = document.getElementById('victoryModal');
+            if (victoryModal) {
+                victoryModal.remove();
+                console.log('🎉 通關提示已隱藏');
+            }
+        }
+        
         // 音樂管理函數
         function initGameBGM() {
             try {
@@ -2581,6 +3148,8 @@
         
         function updatePlayer() {
             const wasMoving = Math.abs(player.velocityX) > 0.1;
+            
+
             
             // 如果主角控制被禁用，停止移動和跑步音效
             if (player.controlDisabled) {
@@ -2799,15 +3368,28 @@
                     
                     if (player.x >= triggerX) {
                         // 檢查是否收集了足夠的光球（至少35顆）
+                        console.log(`🎯 主角到達 Laboratory-1 觸發點！位置: ${player.x.toFixed(2)} >= ${triggerX.toFixed(2)}`);
+                        
                         if (typeof heartManager !== 'undefined' && heartManager.canWin()) {
                             road.isTransformed = true;
                             road.transformStartTime = currentTime;
                             road.type = 'laboratory-2';
                             player.controlDisabled = true; // 禁用主角控制
-                            console.log('🏥 Laboratory-1轉換為Laboratory-2！主角控制已禁用');
+                            endingState.victoryTriggered = true; // 標記勝利已觸發
+                            console.log('🏥 Laboratory-1轉換為Laboratory-2！觸發勝利狀態');
+                            
+                            // 初始化結局影片（提前準備）
+                            if (!endingVideo) {
+                                initEndingVideo();
+                            }
                             
                             // 播放結束音效
                             playEndAudio();
+                            
+                            // 顯示通關提示
+                            setTimeout(() => {
+                                showVictoryModal();
+                            }, 1000); // 延遲1秒顯示，讓音效先播放
                         } else {
                             // 光球數量不足，阻止進入
                             player.x = triggerX - 1; // 阻止進入
