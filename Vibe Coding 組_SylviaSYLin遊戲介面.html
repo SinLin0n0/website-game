@@ -2595,12 +2595,6 @@
                     alert('結局影片播放失敗: ' + e.message + '\n請確認 assets/ending_animation.mp4 檔案存在且可播放');
                 });
                 
-                // 暫停遊戲背景音樂（如果有的話）
-                if (gameBGM && !gameBGM.paused) {
-                    gameBGM.pause();
-                    console.log('🎵 背景音樂已暫停');
-                }
-                
                 // 暫停遊戲主循環
                 if (gameLoopId) {
                     cancelAnimationFrame(gameLoopId);
@@ -2995,6 +2989,13 @@
             // 點擊按鈕播放影片
             passButton.onclick = function() {
                 console.log('🎬 Pass 按鈕被點擊，開始播放結局影片');
+                
+                // 暫停遊戲背景音樂（如果有的話）
+                if (gameBGM && !gameBGM.paused) {
+                    gameBGM.pause();
+                    console.log('🎵 背景音樂已暫停（由 pass-btn 觸發）');
+                }
+                
                 hideVictoryModal();
                 playEndingVideo();
             };
@@ -3420,8 +3421,8 @@
             victoryDuration = 2000; // 2秒變黑時間
             console.log('🎬 開始勝利序列：畫面變黑');
             
-            // 音樂與畫面一起淡出
-            fadeOutGameBGM();
+            // 不在此處停止音樂，保持音樂播放直到用戶點擊 pass-btn
+            // fadeOutGameBGM(); // 已移除：音樂會在點擊 pass-btn 時才停止
         }
 
         function checkEndpoint() {
