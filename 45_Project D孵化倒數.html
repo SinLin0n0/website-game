@@ -500,7 +500,7 @@
             roads: [], endpoint: null
         };
         
-        // inventory變數已移除，因為UI元素已移除
+
         let keys = {};
         
         // 載入背景圖片
@@ -692,7 +692,6 @@
             heartManager.loadImages();
             createWorld();
             setupEventListeners();
-            updateUI();
             setupStory1Image(); // 設置 story-1 圖片
             
             // 初始化音效系統
@@ -3397,7 +3396,6 @@
             const newlyCollected = hpLogoManager.checkCollisions(player);
             if (newlyCollected > 0) {
                             console.log('💊 HP Logo被收集！');
-                updateUI();
             }
             
             // 使用Spring模組檢查障礙物碰撞
@@ -3521,49 +3519,15 @@
                     showFailureScreen();
                 }
             }
-            updateUI();
         }
         
-        function useHealthPotion() {
-            // UI元素已移除，此函數保留以備將來使用
-        }
+
         
-        function useShield() {
-            // UI元素已移除，此函數保留以備將來使用
-        }
+
         
-        function updateUI() {
-            // UI元素已移除，此函數保留以備將來使用
-        }
+
         
-        function endGame(success) {
-            // 停止遊戲循環
-            if (gameLoopId) {
-                cancelAnimationFrame(gameLoopId);
-                gameLoopId = null;
-            }
-            
-            gameState = 'ended';
-            
-            // 停止跑步音效（無論成功或失敗）
-            stopRunningAudio();
-            
-            if (success) {
-                // 音樂淡出效果
-                fadeOutGameBGM(() => {
-                    // 淡出完成後顯示結束畫面
-                    const modal = document.getElementById('endingModal');
-                    const title = document.getElementById('endingTitle');
-                    const text = document.getElementById('endingText');
-                    
-                    title.textContent = '🎉 任務成功！';
-                    text.innerHTML = `恭喜你成功逃出了危險！<br><br>你發現的秘密將改變整個世界...<br><br>在你的努力下，人類終於找到了<br>突破科技極限的關鍵。<br><br>新的時代即將來臨！`;
-                    
-                    modal.style.display = 'flex';
-                });
-            }
-            // 移除失敗畫面處理，為客製化做準備
-        }
+
         
         function restartGame() {
             // 停止遊戲循環
@@ -3617,9 +3581,6 @@
             // 重置世界（這會重新創建雲朵）
             createWorld();
             
-            // 重置庫存
-            inventory = { healthPotions: 2, shields: 1 };
-            
             // 重置road-short-1和road-short-2掉落狀態
             world.roads.forEach(road => {
                 if (road.type === 'road-short-1' || road.type === 'road-short-2') {
@@ -3631,8 +3592,6 @@
             
             // 清除所有按鍵狀態
             keys = {};
-            
-            updateUI();
             
             // 停止背景音樂
             stopGameBGM();
@@ -3703,9 +3662,6 @@
             // 重置世界（這會重新創建雲朵）
             createWorld();
             
-            // 重置庫存
-            inventory = { healthPotions: 2, shields: 1 };
-            
             // 重置road-short-1和road-short-2掉落狀態
             world.roads.forEach(road => {
                 if (road.type === 'road-short-1' || road.type === 'road-short-2') {
@@ -3717,8 +3673,6 @@
             
             // 清除所有按鍵狀態
             keys = {};
-            
-            updateUI();
             
             // 停止當前背景音樂並清除淡出效果
             stopGameBGM();
