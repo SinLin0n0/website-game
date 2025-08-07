@@ -4,8 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>像素冒險 - 危險逃脫</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=fallback" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
         
         * {
             margin: 0;
@@ -41,6 +43,54 @@
             display: block;
             width: 100vw; /* 左右延伸到邊緣 */
             height: calc(100vh * 513 / 749); /* 按比例動態高度 */
+        }
+        
+        /* Loading畫面 */
+        .loading-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+        
+        .loading-content {
+            text-align: center;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .loading-title {
+            font-size: 24px;
+            margin-bottom: 30px;
+            color: #65B4B7;
+            text-shadow: 0 0 10px #65B4B7;
+            font-family: 'Press Start 2P', 'Courier New', 'Courier', monospace;
+        }
+        
+        .loading-progress {
+            width: 300px;
+            height: 20px;
+            background: #333;
+            border: 2px solid #65B4B7;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .loading-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #65B4B7, #4a8a8c);
+            width: 0%;
+            transition: width 0.3s ease;
+            box-shadow: 0 0 10px #65B4B7;
         }
         
         /* 前言背景視窗 */
@@ -333,6 +383,16 @@
     </style>
 </head>
 <body>
+    <!-- Loading畫面 -->
+    <div class="loading-modal" id="loadingModal">
+        <div class="loading-content">
+            <div class="loading-title">LOADING...</div>
+            <div class="loading-progress">
+                <div class="loading-bar" id="loadingBar"></div>
+            </div>
+        </div>
+    </div>
+    
     <div class="game-container">
         <!-- 前言背景視窗 -->
         <div class="intro-modal" id="introModal">
@@ -382,6 +442,12 @@
     </div>
 
     <script>
+        // Loading系統變數
+        let loadingProgress = 0;
+        let totalResources = 0;
+        let loadedResources = 0;
+        let loadingComplete = false;
+        
         // 遊戲變數
         let canvas, ctx;
         let gameState = 'intro';
@@ -511,10 +577,12 @@
                 backgroundHeight = this.height;
                 backgroundLoaded = true;
                 console.log('背景圖片載入完成:', backgroundWidth + 'x' + backgroundHeight);
+                onResourceLoaded();
             };
             backgroundImage.onerror = function() {
                 console.log('背景圖片載入失敗，使用預設背景');
                 backgroundLoaded = false;
+                onResourceLoaded();
             };
             // 使用相對路徑 - 請將您的背景圖片命名為 background.jpg 並放在與此HTML文件相同的目錄中
             backgroundImage.src = './45_Project D孵化倒數/assets/background.jpg';
@@ -555,10 +623,14 @@
                     characterSprites.idle[index] = img;
                     loadedCount++;
                     console.log(`✅ 站立動畫 ${index + 1} 載入完成: ${idleFramePaths[index]} (${this.width}x${this.height})`);
+                    // 通知loading系統
+                    onResourceLoaded();
                     loadIdleAnimation(index + 1); // 載入下一個
                 };
                 img.onerror = function() {
                     console.log(`❌ 站立動畫 ${index + 1} 載入失敗: ${idleFramePaths[index]}`);
+                    // 通知loading系統
+                    onResourceLoaded();
                     loadIdleAnimation(index + 1); // 繼續載入下一個
                 };
                 img.src = idleFramePaths[index];
@@ -591,6 +663,7 @@
                      } else {
                          console.log(`❌ 跑步動畫載入不完整，預期4幀，實際${characterSprites.running.length}幀`);
                      }
+                     
                     return;
                 }
                 
@@ -599,10 +672,14 @@
                     characterSprites.running[index] = img;
                     loadedCount++;
                     console.log(`✅ 跑步動畫 ${index + 1} 載入完成: ${runningFramePaths[index]} (${this.width}x${this.height})`);
+                    // 通知loading系統
+                    onResourceLoaded();
                     loadRunningAnimation(index + 1); // 載入下一個
                 };
                 img.onerror = function() {
                     console.log(`❌ 跑步動畫 ${index + 1} 載入失敗: ${runningFramePaths[index]}`);
+                    // 通知loading系統
+                    onResourceLoaded();
                     loadRunningAnimation(index + 1); // 繼續載入下一個
                 };
                 img.src = runningFramePaths[index];
@@ -622,6 +699,8 @@
                 characterSprites.jumpPrepare = jumpPrepareImg;
                 loadedCount++;
                 console.log('✅ 準備跳躍圖片載入完成: jump-1.svg');
+                // 通知loading系統
+                onResourceLoaded();
                 if (loadedCount === 2) {
                     console.log('🏃‍♂️ 所有跳躍圖片載入完成！');
                 }
@@ -629,6 +708,8 @@
             jumpPrepareImg.onerror = function() {
                 console.log('❌ 準備跳躍圖片載入失敗: jump-1.svg');
                 loadedCount++;
+                // 通知loading系統
+                onResourceLoaded();
             };
             jumpPrepareImg.src = './45_Project D孵化倒數/assets/jump-1.svg';
             
@@ -638,6 +719,8 @@
                 characterSprites.jumping = jumpImg;
                 loadedCount++;
                 console.log('✅ 跳躍圖片載入完成: jump-2.svg');
+                // 通知loading系統
+                onResourceLoaded();
                 if (loadedCount === 2) {
                     console.log('🏃‍♂️ 所有跳躍圖片載入完成！');
                 }
@@ -645,6 +728,8 @@
             jumpImg.onerror = function() {
                 console.log('❌ 跳躍圖片載入失敗: jump-2.svg');
                 loadedCount++;
+                // 通知loading系統
+                onResourceLoaded();
             };
             jumpImg.src = './45_Project D孵化倒數/assets/jump-2.svg';
         }
@@ -656,8 +741,35 @@
         let GAME_HEIGHT = Math.floor(window.innerHeight * GAME_HEIGHT_RATIO);  // 動態計算遊戲高度
         let GAME_WIDTH = window.innerWidth;  // 遊戲畫面寬度適應視窗
         
+        // Loading系統函數
+        function startLoading() {
+            console.log('🚀 開始載入遊戲資源...');
+            updateLoadingProgress(5);
+        }
+        
+        function updateLoadingProgress(progress) {
+            loadingProgress = progress;
+            const loadingBar = document.getElementById('loadingBar');
+            if (loadingBar) {
+                loadingBar.style.width = progress + '%';
+            }
+        }
+        
+
+        
+        function hideLoading() {
+            const loadingModal = document.getElementById('loadingModal');
+            if (loadingModal) {
+                loadingModal.style.display = 'none';
+                console.log('✅ Loading完成，遊戲開始！');
+            }
+        }
+        
         // 初始化
         function init() {
+            // 開始loading流程
+            startLoading();
+            
             canvas = document.getElementById('gameCanvas');
             ctx = canvas.getContext('2d');
             
@@ -679,20 +791,70 @@
             ctx.imageSmoothingEnabled = false; // 像素風格保持銳利
             canvas.oncontextmenu = function(e) { e.preventDefault(); e.stopPropagation(); }
             
+            // 開始載入所有資源
+            loadAllResources();
+        }
+        
+        function loadAllResources() {
+            console.log('📦 開始載入所有遊戲資源...');
+            
+            // 計算總資源數量
+            totalResources = 0;
+            loadedResources = 0;
+            
+            // 背景圖片
+            totalResources++;
             loadBackgroundImage();
+            
+            // 角色動畫
+            totalResources += 6; // idle(2) + running(4) - 每個圖片都會調用onResourceLoaded()
             loadCharacterSprites();
+            
+            // 跳躍動畫
+            totalResources += 2; // jump-1, jump-2
             loadJumpSprite();
+            
+            // 道路圖片
+            totalResources += 24; // 各種road圖片（road、house、bridge、laboratory等）
             loadRoadImages();
+            
+            // HP Logo
+            totalResources++;
             hpLogoManager.loadImage();
+            
+            // Spring
+            totalResources += 4; // spring-1到spring-4
             springManager.loadImages();
+            
+            // Cloud
+            totalResources += 3; // cloud-1到cloud-3
             cloudManager.loadImages();
+            
+            // Cloud2
+            totalResources += 3; // cloud-1到cloud-3
             cloudManager2.loadImages();
+            
+            // Lightning
+            totalResources++;
             lightningManager.loadImages();
+            
+            // Lightning2
+            totalResources++;
             lightningManager2.loadImages();
+            
+            // Heart
+            totalResources += 3; // heart-1, heart-2, hp-small
             heartManager.loadImages();
-            createWorld();
-            setupEventListeners();
-            setupStory1Image(); // 設置 story-1 圖片
+            
+            // 音效系統
+            totalResources += 7; // 各種音效
+            initAudioSystems();
+            
+            console.log(`📊 總共需要載入 ${totalResources} 個資源`);
+        }
+        
+        function initAudioSystems() {
+            updateLoadingProgress(60);
             
             // 初始化音效系統
             initButtonAudio();
@@ -703,9 +865,38 @@
             initCloudAudio();
             initBornAudio();
             
-
+            // 音效載入完成
+            loadedResources += 7;
+            checkLoadingComplete();
+        }
+        
+        function onResourceLoaded() {
+            loadedResources++;
+            const progress = Math.floor((loadedResources / totalResources) * 100);
+            updateLoadingProgress(progress);
             
-            gameLoop(); // 啟動遊戲循環以顯示前言背景
+            checkLoadingComplete();
+        }
+        
+        function checkLoadingComplete() {
+            if (loadedResources >= totalResources && !loadingComplete) {
+                loadingComplete = true;
+                updateLoadingProgress(100);
+                
+                // 延遲一下讓用戶看到100%的進度
+                setTimeout(() => {
+                    // 創建世界和設置事件監聽器
+                    createWorld();
+                    setupEventListeners();
+                    setupStory1Image();
+                    
+                    // 隱藏loading畫面
+                    hideLoading();
+                    
+                    // 啟動遊戲循環
+                    gameLoop();
+                }, 1000);
+            }
         }
 
         
@@ -3835,6 +4026,8 @@
                         if (loadedCount === lightningTypes.length) {
                             this.imagesLoaded = true;
                             console.log('⚡ Lightning圖片載入完成');
+                            // 通知loading系統
+                            onResourceLoaded();
                         }
                     };
                     img.onerror = () => {
@@ -3842,6 +4035,8 @@
                         loadedCount++;
                         if (loadedCount === lightningTypes.length) {
                             this.imagesLoaded = true;
+                            // 通知loading系統
+                            onResourceLoaded();
                         }
                     };
                     img.src = `./45_Project D孵化倒數/assets/${type}.svg`;
@@ -4026,6 +4221,8 @@
                         if (loadedCount === lightningTypes.length) {
                             this.imagesLoaded = true;
                             console.log('⚡ Lightning2圖片載入完成');
+                            // 通知loading系統
+                            onResourceLoaded();
                         }
                     };
                     img.onerror = () => {
@@ -4033,6 +4230,8 @@
                         loadedCount++;
                         if (loadedCount === lightningTypes.length) {
                             this.imagesLoaded = true;
+                            // 通知loading系統
+                            onResourceLoaded();
                         }
                     };
                     img.src = `./45_Project D孵化倒數/assets/${type}.svg`;
@@ -4212,6 +4411,8 @@
                     img.onload = () => {
                         this.images[type] = img;
                         loadedCount++;
+                        // 通知loading系統
+                        onResourceLoaded();
                         if (loadedCount === cloudTypes.length) {
                             this.imagesLoaded = true;
                             console.log('☁️ Cloud圖片載入完成');
@@ -4220,6 +4421,8 @@
                     img.onerror = () => {
                         console.log(`❌ Cloud圖片載入失敗: ${type}`);
                         loadedCount++;
+                        // 通知loading系統
+                        onResourceLoaded();
                         if (loadedCount === cloudTypes.length) {
                             this.imagesLoaded = true;
                         }
@@ -4493,6 +4696,8 @@
                     img.onload = () => {
                         this.images[type] = img;
                         loadedCount++;
+                        // 通知loading系統
+                        onResourceLoaded();
                         if (loadedCount === cloudTypes.length) {
                             this.imagesLoaded = true;
                             console.log('☁️ Cloud2圖片載入完成');
@@ -4501,6 +4706,8 @@
                     img.onerror = () => {
                         console.log(`❌ Cloud2圖片載入失敗: ${type}`);
                         loadedCount++;
+                        // 通知loading系統
+                        onResourceLoaded();
                         if (loadedCount === cloudTypes.length) {
                             this.imagesLoaded = true;
                         }
@@ -4767,6 +4974,9 @@
                         loadedCount++;
                         console.log(`✅ 彈簧圖片載入完成: ${type}.svg`);
                         
+                        // 通知loading系統
+                        onResourceLoaded();
+                        
                         if (loadedCount === springTypes.length) {
                             this.imagesLoaded = true;
                             console.log('🏃‍♂️ 所有彈簧圖片載入完成！');
@@ -4777,6 +4987,8 @@
                     img.onerror = () => {
                         console.log(`❌ 彈簧圖片載入失敗: ${type}.svg`);
                         loadedCount++;
+                        // 通知loading系統
+                        onResourceLoaded();
                         if (loadedCount === springTypes.length) {
                             this.imagesLoaded = true;
                         }
@@ -5056,10 +5268,12 @@
                 this.image.onload = () => {
                     this.imageLoaded = true;
                     console.log('✅ HP Logo圖片載入完成: hp-logo.svg');
+                    onResourceLoaded();
                 };
                 this.image.onerror = () => {
                     console.log('❌ HP Logo圖片載入失敗: hp-logo.svg');
                     this.imageLoaded = false;
+                    onResourceLoaded();
                 };
                 this.image.src = './45_Project D孵化倒數/assets/hp-logo.svg';
             }
@@ -5240,7 +5454,7 @@
 
 
         function loadRoadImages() {
-            const roadTypes = ['road-1', 'road-kanban', 'road-2', 'road-3', 'road-4', 'road-5', 'road-7', 'road-8', 'road-9', 'road-mid', 'road-short-1', 'road-short-2', 'house-1', 'house-2', 'house-3', 'house-4', 'house-5', 'house-6', 'house-7', 'house-8', 'bridge-1', 'bridge-2', 'laboratory-1', 'laboratory-2', 'cloud-1', 'cloud-2', 'cloud-3', 'lightning', 'heart-1', 'heart-2'];
+            const roadTypes = ['road-1', 'road-kanban', 'road-2', 'road-3', 'road-4', 'road-5', 'road-7', 'road-8', 'road-9', 'road-mid', 'road-short-1', 'road-short-2', 'house-1', 'house-2', 'house-3', 'house-4', 'house-5', 'house-6', 'house-7', 'house-8', 'bridge-1', 'bridge-2', 'laboratory-1', 'laboratory-2'];
             let loadedCount = 0;
             
             roadTypes.forEach(type => {
@@ -5254,6 +5468,9 @@
                     };
                     loadedCount++;
                     console.log(`✅ 路面圖片載入完成: ${type}.svg (${roadOriginalSizes[type].width}x${roadOriginalSizes[type].height})`);
+                    
+                    // 通知loading系統
+                    onResourceLoaded();
                     
                     if (loadedCount === roadTypes.length) {
                         roadsLoaded = true;
@@ -5272,6 +5489,8 @@
                         height: 32
                     };
                     loadedCount++;
+                    // 通知loading系統
+                    onResourceLoaded();
                     if (loadedCount === roadTypes.length) {
                         roadsLoaded = true;
                         if (typeof createWorld === 'function') {
@@ -5523,6 +5742,9 @@
                         loadedCount++;
                         console.log(`✅ 心臟圖片載入完成: ${type}.svg`);
                         
+                        // 通知loading系統
+                        onResourceLoaded();
+                        
                         if (loadedCount === heartTypes.length) {
                             this.imagesLoaded = true;
                             console.log('❤️ 所有心臟圖片載入完成！');
@@ -5533,6 +5755,8 @@
                     img.onerror = () => {
                         console.log(`❌ 心臟圖片載入失敗: ${type}.svg`);
                         loadedCount++;
+                        // 通知loading系統
+                        onResourceLoaded();
                         if (loadedCount === heartTypes.length) {
                             this.imagesLoaded = true;
                             this.createHearts();
