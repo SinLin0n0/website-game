@@ -108,7 +108,7 @@
         }
         
         .intro-content {
-            background: url('./45_Project D孵化倒數/assets/story-bg.svg') no-repeat center center;
+            background: url('./45_Project D孵化倒數/assets/story-bg.png') no-repeat center center;
             background-size: cover;
             border: none;
             border-radius: 0;
@@ -584,8 +584,8 @@
                 backgroundLoaded = false;
                 onResourceLoaded();
             };
-            // 使用相對路徑 - 請將您的背景圖片命名為 background.jpg 並放在與此HTML文件相同的目錄中
-            backgroundImage.src = './45_Project D孵化倒數/assets/background.jpg';
+            // 使用相對路徑 - 請將您的背景圖片命名為 background.png 並放在與此HTML文件相同的目錄中
+            backgroundImage.src = './45_Project D孵化倒數/assets/background.png';
         }
         
         // 載入角色動畫 - 確保正確順序載入
@@ -594,18 +594,18 @@
             characterSprites.idle = [];
             characterSprites.running = [];
             
-            // 站立動畫圖片路徑（SVG格式）
+            // 站立動畫圖片路徑（PNG格式）
             const idleFramePaths = [
-                        './45_Project D孵化倒數/assets/character-idle-1.svg',
-        './45_Project D孵化倒數/assets/character-idle-2.svg'
+                        './45_Project D孵化倒數/assets/character-idle-1.png',
+        './45_Project D孵化倒數/assets/character-idle-2.png'
             ];
             
-            // 跑步動畫圖片路徑（SVG格式） - 按照正確順序
+            // 跑步動畫圖片路徑（PNG格式） - 按照正確順序
             const runningFramePaths = [
-                        './45_Project D孵化倒數/assets/character-run-1.svg',  // 索引0
-        './45_Project D孵化倒數/assets/character-run-2.svg',  // 索引1
-        './45_Project D孵化倒數/assets/character-run-3.svg',  // 索引2
-        './45_Project D孵化倒數/assets/character-run-4.svg'   // 索引3
+                        './45_Project D孵化倒數/assets/character-run-1.png',  // 索引0
+        './45_Project D孵化倒數/assets/character-run-2.png',  // 索引1
+        './45_Project D孵化倒數/assets/character-run-3.png',  // 索引2
+        './45_Project D孵化倒數/assets/character-run-4.png'   // 索引3
             ];
             
             let loadedCount = 0;
@@ -698,7 +698,7 @@
             jumpPrepareImg.onload = function() {
                 characterSprites.jumpPrepare = jumpPrepareImg;
                 loadedCount++;
-                console.log('✅ 準備跳躍圖片載入完成: jump-1.svg');
+                console.log('✅ 準備跳躍圖片載入完成: jump-1.png');
                 // 通知loading系統
                 onResourceLoaded();
                 if (loadedCount === 2) {
@@ -706,19 +706,19 @@
                 }
             };
             jumpPrepareImg.onerror = function() {
-                console.log('❌ 準備跳躍圖片載入失敗: jump-1.svg');
+                console.log('❌ 準備跳躍圖片載入失敗: jump-1.png');
                 loadedCount++;
                 // 通知loading系統
                 onResourceLoaded();
             };
-            jumpPrepareImg.src = './45_Project D孵化倒數/assets/jump-1.svg';
+            jumpPrepareImg.src = './45_Project D孵化倒數/assets/jump-1.png';
             
             // 載入跳躍圖片 (jump-2)
             const jumpImg = new Image();
             jumpImg.onload = function() {
                 characterSprites.jumping = jumpImg;
                 loadedCount++;
-                console.log('✅ 跳躍圖片載入完成: jump-2.svg');
+                console.log('✅ 跳躍圖片載入完成: jump-2.png');
                 // 通知loading系統
                 onResourceLoaded();
                 if (loadedCount === 2) {
@@ -726,12 +726,12 @@
                 }
             };
             jumpImg.onerror = function() {
-                console.log('❌ 跳躍圖片載入失敗: jump-2.svg');
+                console.log('❌ 跳躍圖片載入失敗: jump-2.png');
                 loadedCount++;
                 // 通知loading系統
                 onResourceLoaded();
             };
-            jumpImg.src = './45_Project D孵化倒數/assets/jump-2.svg';
+            jumpImg.src = './45_Project D孵化倒數/assets/jump-2.png';
         }
         
         // 移除上傳功能 - 直接使用指定的圖片文件
@@ -2198,7 +2198,7 @@
             
             if (gameOverImage && retryBtnContainer && retryBtnImage) {
                 // 預先載入 retry-btn 圖片
-                retryBtnImage.src = './45_Project D孵化倒數/assets/retry-btn.svg';
+                retryBtnImage.src = './45_Project D孵化倒數/assets/retry-btn.png';
                 
                 // 追蹤重試按鈕點擊的變數
                 let isProcessingRetryClick = false; // 防止快速連續點擊
@@ -2284,7 +2284,7 @@
                 gameOverImage.onload = adjustFailureImageSize;
                 
                 // 設定 game over 圖片來源以觸發 onload
-                gameOverImage.src = './45_Project D孵化倒數/assets/game over.svg';
+                gameOverImage.src = './45_Project D孵化倒數/assets/game over.png';
             }
         }
         
@@ -2328,7 +2328,7 @@
             
             if (story1Image && nextBtnContainer && nextBtnImage) {
                 // 預先載入 next-btn 圖片
-                nextBtnImage.src = './45_Project D孵化倒數/assets/next-btn.svg';
+                nextBtnImage.src = './45_Project D孵化倒數/assets/next-btn.png';
                 
                 // 使用全域變數 clickCount 和 isProcessingClick
 
@@ -2422,7 +2422,7 @@
                         isProcessingClick = true;
                         
                         // 檢查當前按鈕類型（使用 endsWith 更可靠）
-                        const isStartBtn = nextBtnImage.src.endsWith('start-btn.svg');
+                        const isStartBtn = nextBtnImage.src.endsWith('start-btn.png');
                         console.log(`🖱️ Button clicked! 當前按鈕類型: ${isStartBtn ? 'start-btn' : 'next-btn'}, 處理中...`);
                         
                         if (isStartBtn) {
@@ -2438,7 +2438,7 @@
                             if (clickCount === 1) {
                                 // 第一次點擊：切換到 story-2
                                 story1Image.onload = adjustImageSize;
-                                story1Image.src = './45_Project D孵化倒數/assets/story-2.svg';
+                                story1Image.src = './45_Project D孵化倒數/assets/story-2.png';
                                 console.log('📄 切換到 story-2');
                                 
                                 // 延遲解鎖點擊
@@ -2450,12 +2450,12 @@
                             } else if (clickCount === 2) {
                                 // 第二次點擊：切換到 story-3 並改變按鈕圖片
                                 story1Image.onload = adjustImageSize;
-                                story1Image.src = './45_Project D孵化倒數/assets/story-3.svg';
+                                story1Image.src = './45_Project D孵化倒數/assets/story-3.png';
                                 
                                 // 延遲切換按鈕圖片，避免立即觸發事件
                                 setTimeout(() => {
                                     console.log('🔄 準備切換按鈕為 start-btn');
-                                    nextBtnImage.src = './45_Project D孵化倒數/assets/start-btn.svg';
+                                    nextBtnImage.src = './45_Project D孵化倒數/assets/start-btn.png';
                                     console.log('✅ 按鈕已切換為 start-btn');
                                     
                                     // 延遲解鎖點擊
@@ -2486,7 +2486,7 @@
                 story1Image.onload = adjustImageSize;
                 
                 // 設定 story-1 圖片來源以觸發 onload
-                story1Image.src = './45_Project D孵化倒數/assets/story-1.svg';
+                story1Image.src = './45_Project D孵化倒數/assets/story-1.png';
             }
         }
         
@@ -2874,7 +2874,7 @@
             // 創建重玩按鈕（精確定位）
             const retryButton = document.createElement('img');
             retryButton.id = 'endingRetryButton';
-            retryButton.src = './45_Project D孵化倒數/assets/retry-btn-2.svg';
+            retryButton.src = './45_Project D孵化倒數/assets/retry-btn-2.png';
             retryButton.style.position = 'fixed';
             retryButton.style.cursor = 'pointer';
             retryButton.style.transition = 'transform 0.2s ease';
@@ -3158,10 +3158,10 @@
             const story1Image = document.getElementById('story1Image');
             const nextBtnImage = document.getElementById('nextBtnImage');
             if (story1Image) {
-                story1Image.src = './45_Project D孵化倒數/assets/story-1.svg';
+                story1Image.src = './45_Project D孵化倒數/assets/story-1.png';
             }
             if (nextBtnImage) {
-                nextBtnImage.src = './45_Project D孵化倒數/assets/next-btn.svg';
+                nextBtnImage.src = './45_Project D孵化倒數/assets/next-btn.png';
             }
             
             // 顯示前言畫面
@@ -3232,7 +3232,7 @@
             
             // 創建 pass-btn 按鈕
             const passButton = document.createElement('img');
-            passButton.src = './45_Project D孵化倒數/assets/pass-btn.svg';
+            passButton.src = './45_Project D孵化倒數/assets/pass-btn.png';
             passButton.style.width = '200px';
             passButton.style.height = 'auto';
             passButton.style.cursor = 'pointer';
@@ -4039,7 +4039,7 @@
                             onResourceLoaded();
                         }
                     };
-                    img.src = `./45_Project D孵化倒數/assets/${type}.svg`;
+                    img.src = `./45_Project D孵化倒數/assets/${type}.png`;
                 });
             }
 
@@ -4234,7 +4234,7 @@
                             onResourceLoaded();
                         }
                     };
-                    img.src = `./45_Project D孵化倒數/assets/${type}.svg`;
+                    img.src = `./45_Project D孵化倒數/assets/${type}.png`;
                 });
             }
 
@@ -4427,7 +4427,7 @@
                             this.imagesLoaded = true;
                         }
                     };
-                    img.src = `./45_Project D孵化倒數/assets/${type}.svg`;
+                    img.src = `./45_Project D孵化倒數/assets/${type}.png`;
                 });
             }
 
@@ -4712,7 +4712,7 @@
                             this.imagesLoaded = true;
                         }
                     };
-                    img.src = `./45_Project D孵化倒數/assets/${type}.svg`;
+                    img.src = `./45_Project D孵化倒數/assets/${type}.png`;
                 });
             }
 
@@ -4972,7 +4972,7 @@
                     img.onload = () => {
                         this.images[type] = img;
                         loadedCount++;
-                        console.log(`✅ 彈簧圖片載入完成: ${type}.svg`);
+                        console.log(`✅ 彈簧圖片載入完成: ${type}.png`);
                         
                         // 通知loading系統
                         onResourceLoaded();
@@ -4985,7 +4985,7 @@
                         }
                     };
                     img.onerror = () => {
-                        console.log(`❌ 彈簧圖片載入失敗: ${type}.svg`);
+                        console.log(`❌ 彈簧圖片載入失敗: ${type}.png`);
                         loadedCount++;
                         // 通知loading系統
                         onResourceLoaded();
@@ -4993,7 +4993,7 @@
                             this.imagesLoaded = true;
                         }
                     };
-                    img.src = `./45_Project D孵化倒數/assets/${type}.svg`;
+                    img.src = `./45_Project D孵化倒數/assets/${type}.png`;
                 });
             }
 
@@ -5267,15 +5267,15 @@
                 this.image = new Image();
                 this.image.onload = () => {
                     this.imageLoaded = true;
-                    console.log('✅ HP Logo圖片載入完成: hp-logo.svg');
+                    console.log('✅ HP Logo圖片載入完成: hp-logo.png');
                     onResourceLoaded();
                 };
                 this.image.onerror = () => {
-                    console.log('❌ HP Logo圖片載入失敗: hp-logo.svg');
+                    console.log('❌ HP Logo圖片載入失敗: hp-logo.png');
                     this.imageLoaded = false;
                     onResourceLoaded();
                 };
-                this.image.src = './45_Project D孵化倒數/assets/hp-logo.svg';
+                this.image.src = './45_Project D孵化倒數/assets/hp-logo.png';
             }
 
             // 創建HP Logo（水平排列）
@@ -5467,7 +5467,7 @@
                         height: this.naturalHeight || this.height
                     };
                     loadedCount++;
-                    console.log(`✅ 路面圖片載入完成: ${type}.svg (${roadOriginalSizes[type].width}x${roadOriginalSizes[type].height})`);
+                    console.log(`✅ 路面圖片載入完成: ${type}.png (${roadOriginalSizes[type].width}x${roadOriginalSizes[type].height})`);
                     
                     // 通知loading系統
                     onResourceLoaded();
@@ -5482,7 +5482,7 @@
                     }
                 };
                 img.onerror = function() {
-                    console.log(`❌ 路面圖片載入失敗: ${type}.svg`);
+                    console.log(`❌ 路面圖片載入失敗: ${type}.png`);
                     // 使用預設尺寸
                     roadOriginalSizes[type] = {
                         width: 200,
@@ -5498,7 +5498,7 @@
                         }
                     }
                 };
-                img.src = `./45_Project D孵化倒數/assets/${type}.svg`;
+                img.src = `./45_Project D孵化倒數/assets/${type}.png`;
             });
         }
 
@@ -5740,7 +5740,7 @@
                     img.onload = () => {
                         this.images[type] = img;
                         loadedCount++;
-                        console.log(`✅ 心臟圖片載入完成: ${type}.svg`);
+                        console.log(`✅ 心臟圖片載入完成: ${type}.png`);
                         
                         // 通知loading系統
                         onResourceLoaded();
@@ -5753,7 +5753,7 @@
                         }
                     };
                     img.onerror = () => {
-                        console.log(`❌ 心臟圖片載入失敗: ${type}.svg`);
+                        console.log(`❌ 心臟圖片載入失敗: ${type}.png`);
                         loadedCount++;
                         // 通知loading系統
                         onResourceLoaded();
@@ -5762,7 +5762,7 @@
                             this.createHearts();
                         }
                     };
-                    img.src = `./45_Project D孵化倒數/assets/${type}.svg`;
+                    img.src = `./45_Project D孵化倒數/assets/${type}.png`;
                 });
             }
 
