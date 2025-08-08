@@ -466,6 +466,9 @@
         let endingGifContainer = null; // 結局 GIF 動畫容器
         let gifAnimationInterval = null; // GIF 動畫間隔計時器
         let currentGifFrame = 1; // 當前 GIF 幀（1 或 2）
+        let endingImagesPreloaded = false; // 結局圖片是否已預載且解碼
+        let endingImage1 = null; // 預載的 pass-1.webp
+        let endingImage2 = null; // 預載的 pass-2.webp
         
         // 音樂管理系統
         let gameBGM = null;
@@ -791,6 +794,9 @@
             ctx.imageSmoothingEnabled = false; // 像素風格保持銳利
             canvas.oncontextmenu = function(e) { e.preventDefault(); e.stopPropagation(); }
             
+            // 優先預載結局圖片（不阻塞主流程）
+            try { preloadEndingImages(); } catch (e) { /* ignore */ }
+
             // 開始載入所有資源
             loadAllResources();
         }
@@ -802,45 +808,32 @@
             totalResources = 0;
             loadedResources = 0;
             
-            // 背景圖片
+            // 背景圖片（計入）
             totalResources++;
             loadBackgroundImage();
             
-            // 角色動畫
-            totalResources += 6; // idle(2) + running(4) - 每個圖片都會調用onResourceLoaded()
+            // 角色動畫（計入）
+            totalResources += 6; // idle(2) + running(4)
             loadCharacterSprites();
             
-            // 跳躍動畫
+            // 跳躍動畫（計入）
             totalResources += 2; // jump-1, jump-2
             loadJumpSprite();
             
-            // 道路圖片
-            totalResources += 24; // 各種road圖片（road、house、bridge、laboratory等）
-            loadRoadImages();
+            // 道路/場景（優先批，計入）
+            const priorityRoadTypes = ['road-1', 'road-kanban', 'road-2', 'road-3', 'house-1', 'house-2', 'house-3'];
+            totalResources += priorityRoadTypes.length;
+            loadRoadImages(priorityRoadTypes, true);
             
-            // HP Logo
+            // HP Logo（計入）
             totalResources++;
             hpLogoManager.loadImage();
             
-            // Spring
+            // Spring（計入）
             totalResources += 4; // spring-1到spring-4
             springManager.loadImages();
             
-            // Cloud
-            totalResources += 3; // cloud-1到cloud-3
-            cloudManager.loadImages();
-            
-            // Cloud2
-            totalResources += 3; // cloud-1到cloud-3
-            cloudManager2.loadImages();
-            
-            // Lightning
-            totalResources++;
-            lightningManager.loadImages();
-            
-            // Lightning2
-            totalResources++;
-            lightningManager2.loadImages();
+            // Cloud/Cloud2/Lightning/Lightning2 改為 Loading 結束後背景載入（不計入）
             
             // Heart
             totalResources += 3; // heart-1, heart-2, hp-small
@@ -849,6 +842,20 @@
             // 音效系統
             totalResources += 7; // 各種音效
             initAudioSystems();
+
+            // 前言/按鈕/失敗與背景（計入）
+            const priorityUIAssets = [
+                './45_Project D孵化倒數/assets/story-1.png',
+                './45_Project D孵化倒數/assets/story-2.png',
+                './45_Project D孵化倒數/assets/story-3.png',
+                './45_Project D孵化倒數/assets/story-bg.png',
+                './45_Project D孵化倒數/assets/start-btn.png',
+                './45_Project D孵化倒數/assets/next-btn.png',
+                './45_Project D孵化倒數/assets/retry-btn.png',
+                './45_Project D孵化倒數/assets/game over.png'
+            ];
+            totalResources += priorityUIAssets.length;
+            preloadPriorityUIAssets(priorityUIAssets);
             
             console.log(`📊 總共需要載入 ${totalResources} 個資源`);
         }
@@ -868,6 +875,56 @@
             // 音效載入完成
             loadedResources += 7;
             checkLoadingComplete();
+        }
+
+        // Loading 完成後，背景載入非優先資源（不計入進度條）
+        function loadDeferredResources() {
+            // Cloud / Cloud2 / Lightning / Lightning2
+            try { cloudManager.loadImages(); } catch (_) {}
+            try { cloudManager2.loadImages(); } catch (_) {}
+            try { lightningManager.loadImages(); } catch (_) {}
+            try { lightningManager2.loadImages(); } catch (_) {}
+
+            // 其餘道路/場景
+            const deferredRoadTypes = ['road-4', 'road-5', 'road-7', 'road-8', 'road-9', 'road-mid', 'road-short-1', 'road-short-2', 'house-4', 'house-5', 'house-6', 'house-7', 'house-8', 'bridge-1', 'bridge-2', 'laboratory-1', 'laboratory-2'];
+            loadRoadImages(deferredRoadTypes, false);
+
+            // 預載結局重玩按鈕（不計入進度）
+            try {
+                const retryBtn2 = new Image();
+                const startDecode = retryBtn2.decode ? () => retryBtn2.decode().catch(() => {}) : () => Promise.resolve();
+                retryBtn2.src = './45_Project D孵化倒數/assets/retry-btn-2.png';
+                startDecode();
+            } catch (_) {}
+        }
+
+        function preloadPriorityUIAssets(urls) {
+            urls.forEach(url => {
+                const img = new Image();
+                img.onload = onResourceLoaded;
+                img.onerror = onResourceLoaded;
+                img.src = url;
+            });
+        }
+
+        // 預載結局圖片（提前請求並解碼）
+        function preloadEndingImages() {
+            if (endingImagesPreloaded) { return; }
+            endingImage1 = new Image();
+            endingImage2 = new Image();
+
+            // 設定來源
+            endingImage1.src = './45_Project D孵化倒數/assets/pass-1.webp';
+            endingImage2.src = './45_Project D孵化倒數/assets/pass-2.webp';
+
+            // 盡力先完成解碼，不阻塞流程
+            const decode1 = endingImage1.decode ? endingImage1.decode().catch(() => {}) : Promise.resolve();
+            const decode2 = endingImage2.decode ? endingImage2.decode().catch(() => {}) : Promise.resolve();
+
+            Promise.all([decode1, decode2]).then(() => {
+                endingImagesPreloaded = true;
+                console.log('🖼️ 結局圖片已預載並解碼完成');
+            });
         }
         
         function onResourceLoaded() {
@@ -890,6 +947,9 @@
                     setupEventListeners();
                     setupStory1Image();
                     
+                    // 在Loading完成畫面關閉後，開始背景載入未計入進度的資源
+                    loadDeferredResources();
+
                     // 隱藏loading畫面
                     hideLoading();
                     
@@ -2861,7 +2921,7 @@
             // 創建圖片元素（與影片尺寸完全相同）
             const gifImage = document.createElement('img');
             gifImage.id = 'endingGifImage';
-            gifImage.src = './45_Project D孵化倒數/assets/pass-1.png';
+            gifImage.src = './45_Project D孵化倒數/assets/pass-1.webp';
             gifImage.style.position = 'fixed';
             gifImage.style.top = '0';
             gifImage.style.left = '0';
@@ -3008,7 +3068,7 @@
             };
             
             // 載入 pass-1 圖片來取得實際尺寸
-            tempImg.src = './45_Project D孵化倒數/assets/pass-1.png';
+            tempImg.src = './45_Project D孵化倒數/assets/pass-1.webp';
         }
         
         function showEndingGif() {
@@ -3018,50 +3078,50 @@
                 initEndingGif();
             }
             
-            // 預先載入圖片以避免閃爍
-            const preloadImage1 = new Image();
-            const preloadImage2 = new Image();
-            preloadImage1.src = './45_Project D孵化倒數/assets/pass-1.png';
-            preloadImage2.src = './45_Project D孵化倒數/assets/pass-2.png';
+            // 若已預載，直接使用快取；否則觸發一次預載
+            if (!endingImagesPreloaded) {
+                try { preloadEndingImages(); } catch (e) { /* ignore */ }
+            }
             
-            // 等待圖片載入完成後再顯示
-            Promise.all([
-                new Promise(resolve => preloadImage1.onload = resolve),
-                new Promise(resolve => preloadImage2.onload = resolve)
-            ]).then(() => {
+            // 等待 pass-1 準備好（若 decode 可用則使用，否則退回 onload/complete）
+            const image1 = endingImage1 || new Image();
+            if (!endingImage1) { image1.src = './45_Project D孵化倒數/assets/pass-1.webp'; }
+            const waitForImage1 = (image1.decode
+                ? image1.decode().catch(() => {})
+                : new Promise(resolve => { if (image1.complete) resolve(); else image1.onload = resolve; })
+            );
+
+            waitForImage1.then(() => {
                 // 先準備 GIF 容器和圖片，但保持在影片後面
                 endingGifContainer.style.display = 'flex';
                 endingGifContainer.style.pointerEvents = 'none'; // 確保容器不阻擋點擊
                 endingGifContainer.style.zIndex = '9998'; // 暫時放在影片後面
-                
+
                 // 重置到第一幀並立即設置圖片
                 currentGifFrame = 1;
                 const gifImage = document.getElementById('endingGifImage');
                 if (gifImage) {
                     gifImage.style.opacity = '1'; // 直接顯示，不淡入
-                    gifImage.src = './45_Project D孵化倒數/assets/pass-1.png';
+                    gifImage.src = image1.src;
                 }
-                
+
                 // 開始播放 Born 音效（循環播放）
                 playBornAudio();
-                
-                // 短暫延遲後再隱藏影片，確保 GIF 已經準備好
-                setTimeout(() => {
-                    if (endingVideo) {
-                        endingVideo.style.display = 'none';
-                    }
-                    // 將 GIF 容器移到最前面
-                    endingGifContainer.style.zIndex = '9999';
-                    
-                    // 重新計算按鈕位置（防止視窗尺寸變化）
-                    const retryButton = document.getElementById('endingRetryButton');
-                    if (retryButton) {
-                        calculateRetryButtonPosition(retryButton);
-                    }
-                    
-                    // 開始 GIF 動畫
-                    startGifAnimation();
-                }, 50); // 50ms 延遲，幾乎察覺不到但足夠讓 GIF 準備好
+
+                // 立即隱藏影片並把 GIF 放到最前面
+                if (endingVideo) {
+                    endingVideo.style.display = 'none';
+                }
+                endingGifContainer.style.zIndex = '9999';
+
+                // 重新計算按鈕位置（防止視窗尺寸變化）
+                const retryButton = document.getElementById('endingRetryButton');
+                if (retryButton) {
+                    calculateRetryButtonPosition(retryButton);
+                }
+
+                // 開始 GIF 動畫
+                startGifAnimation();
             });
         }
         
@@ -3079,11 +3139,19 @@
             // 每1秒切換圖片（無閃爍切換）
             gifAnimationInterval = setInterval(() => {
                 currentGifFrame = currentGifFrame === 1 ? 2 : 1;
-                const nextImage = new Image();
-                nextImage.onload = function() {
-                    gifImage.src = `./45_Project D孵化倒數/assets/pass-${currentGifFrame}.png`;
-                };
-                nextImage.src = `./45_Project D孵化倒數/assets/pass-${currentGifFrame}.png`;
+                const nextImage = currentGifFrame === 1 ? (endingImage1 || new Image()) : (endingImage2 || new Image());
+                if (!nextImage.src) {
+                    nextImage.src = `./45_Project D孵化倒數/assets/pass-${currentGifFrame}.webp`;
+                }
+                if (nextImage.decode) {
+                    nextImage.decode().catch(() => {}).finally(() => {
+                        gifImage.src = nextImage.src;
+                    });
+                } else if (nextImage.complete) {
+                    gifImage.src = nextImage.src;
+                } else {
+                    nextImage.onload = function() { gifImage.src = nextImage.src; };
+                }
             }, 1000);
         }
         
@@ -5453,8 +5521,7 @@
 
 
 
-        function loadRoadImages() {
-            const roadTypes = ['road-1', 'road-kanban', 'road-2', 'road-3', 'road-4', 'road-5', 'road-7', 'road-8', 'road-9', 'road-mid', 'road-short-1', 'road-short-2', 'house-1', 'house-2', 'house-3', 'house-4', 'house-5', 'house-6', 'house-7', 'house-8', 'bridge-1', 'bridge-2', 'laboratory-1', 'laboratory-2'];
+        function loadRoadImages(roadTypes = ['road-1', 'road-kanban', 'road-2', 'road-3', 'road-4', 'road-5', 'road-7', 'road-8', 'road-9', 'road-mid', 'road-short-1', 'road-short-2', 'house-1', 'house-2', 'house-3', 'house-4', 'house-5', 'house-6', 'house-7', 'house-8', 'bridge-1', 'bridge-2', 'laboratory-1', 'laboratory-2'], countToProgress = false) {
             let loadedCount = 0;
             
             roadTypes.forEach(type => {
@@ -5469,8 +5536,10 @@
                     loadedCount++;
                     console.log(`✅ 路面圖片載入完成: ${type}.png (${roadOriginalSizes[type].width}x${roadOriginalSizes[type].height})`);
                     
-                    // 通知loading系統
-                    onResourceLoaded();
+                    // 是否計入loading進度
+                    if (countToProgress) {
+                        onResourceLoaded();
+                    }
                     
                     if (loadedCount === roadTypes.length) {
                         roadsLoaded = true;
@@ -5489,8 +5558,10 @@
                         height: 32
                     };
                     loadedCount++;
-                    // 通知loading系統
-                    onResourceLoaded();
+                    // 是否計入loading進度
+                    if (countToProgress) {
+                        onResourceLoaded();
+                    }
                     if (loadedCount === roadTypes.length) {
                         roadsLoaded = true;
                         if (typeof createWorld === 'function') {
