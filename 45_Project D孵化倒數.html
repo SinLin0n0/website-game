@@ -918,7 +918,13 @@
         function preloadPriorityUIAssets(urls) {
             urls.forEach(url => {
                 const img = new Image();
-                img.onload = onResourceLoaded;
+                img.onload = () => {
+                    // 嘗試進行解碼，確保首次切換顯示時沒有延遲
+                    if (img.decode) {
+                        img.decode().catch(() => {});
+                    }
+                    onResourceLoaded();
+                };
                 img.onerror = onResourceLoaded;
                 img.src = url;
             });
@@ -2511,41 +2517,45 @@
                             startGame();
                             isProcessingClick = false;
                         } else {
-                            // 如果是 next-btn，進行故事切換
+                            // 如果是 next-btn，進行故事切換（等待圖片載入完成才解鎖）
+                            const switchStoryWhenLoaded = (targetSrc, afterLoad) => {
+                                const onLoaded = () => {
+                                    // 解除鎖定並更新尺寸
+                                    story1Image.onload = null;
+                                    adjustImageSize.call(story1Image);
+                                    if (typeof afterLoad === 'function') afterLoad();
+                                    isProcessingClick = false;
+                                    console.log('🔓 圖片載入完成，解鎖點擊');
+                                };
+
+                                story1Image.onload = onLoaded;
+                                story1Image.src = targetSrc;
+                                console.log(`📄 切換圖片為: ${targetSrc}`);
+
+                                // 若圖片已在快取中，onload 可能不觸發，改為同步處理
+                                if (story1Image.complete && story1Image.naturalWidth > 0) {
+                                    onLoaded();
+                                } else if (story1Image.decode) {
+                                    story1Image.decode().then(onLoaded).catch(() => {/* ignore */});
+                                }
+                            };
+
                             clickCount++;
                             console.log(`📄 Next-btn 點擊次數: ${clickCount}`);
-                            
+
                             if (clickCount === 1) {
-                                // 第一次點擊：切換到 story-2
-                                story1Image.onload = adjustImageSize;
-                                story1Image.src = './45_Project D孵化倒數/assets/story-2.webp';
-                                console.log('📄 切換到 story-2');
-                                
-                                // 延遲解鎖點擊
-                                setTimeout(() => {
-                                    isProcessingClick = false;
-                                    console.log('🔓 點擊處理完成，可以再次點擊');
-                                }, 500);
-                                
+                                // 切到 story-2，等載入完成才解鎖
+                                switchStoryWhenLoaded('./45_Project D孵化倒數/assets/story-2.webp');
                             } else if (clickCount === 2) {
-                                // 第二次點擊：切換到 story-3 並改變按鈕圖片
-                                story1Image.onload = adjustImageSize;
-                                story1Image.src = './45_Project D孵化倒數/assets/story-3.webp';
-                                
-                                // 延遲切換按鈕圖片，避免立即觸發事件
-                                setTimeout(() => {
-                                    console.log('🔄 準備切換按鈕為 start-btn');
-                                    nextBtnImage.src = './45_Project D孵化倒數/assets/start-btn.webp';
-                                    console.log('✅ 按鈕已切換為 start-btn');
-                                    
-                                    // 延遲解鎖點擊
-                                    setTimeout(() => {
-                                        isProcessingClick = false;
-                                        console.log('🔓 點擊處理完成，可以點擊 start-btn');
-                                    }, 200);
-                                }, 100);
-                                
-                                console.log('📄 切換到 story-3，按鈕將在 100ms 後變為 start-btn');
+                                // 切到 story-3，載入完成後再把按鈕換成 start-btn
+                                switchStoryWhenLoaded(
+                                    './45_Project D孵化倒數/assets/story-3.webp',
+                                    () => {
+                                        console.log('🔄 準備切換按鈕為 start-btn');
+                                        nextBtnImage.src = './45_Project D孵化倒數/assets/start-btn.webp';
+                                        console.log('✅ 按鈕已切換為 start-btn');
+                                    }
+                                );
                             }
                         }
                     });
