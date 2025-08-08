@@ -896,6 +896,19 @@
                 retryBtn2.src = './45_Project D孵化倒數/assets/retry-btn-2.png';
                 startDecode();
             } catch (_) {}
+
+            // 預載結局圖片（再次確保在 Loading 後啟動預載）
+            try { preloadEndingImages(); } catch (_) {}
+
+            // 提前初始化並預載結局影片（metadata 以外，改為嘗試緩存影片資料）
+            try {
+                if (!endingVideo) { initEndingVideo(); }
+                if (endingVideo) {
+                    endingVideo.preload = 'auto';
+                    // 某些瀏覽器會忽略 auto，但呼叫 load() 可促使開始請求
+                    endingVideo.load();
+                }
+            } catch (_) {}
         }
 
         function preloadPriorityUIAssets(urls) {
