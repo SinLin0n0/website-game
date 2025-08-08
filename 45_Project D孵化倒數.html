@@ -2544,10 +2544,14 @@
                             console.log(`📄 Next-btn 點擊次數: ${clickCount}`);
 
                             if (clickCount === 1) {
-                                // 切到 story-2，等載入完成才解鎖
+                                // 第一次：切到 story-2，等載入完成才解鎖
                                 switchStoryWhenLoaded('./45_Project D孵化倒數/assets/story-2.webp');
                             } else if (clickCount === 2) {
-                                // 切到 story-3，載入完成後再把按鈕換成 start-btn
+                                // 第二次：維持在 story-2，不變更圖片，只解鎖
+                                isProcessingClick = false;
+                                console.log('⏭️ 第二次點擊：維持 story-2，等待第三次切換到 story-3');
+                            } else if (clickCount === 3) {
+                                // 第三次：切到 story-3，載入完成後再把按鈕換成 start-btn
                                 switchStoryWhenLoaded(
                                     './45_Project D孵化倒數/assets/story-3.webp',
                                     () => {
