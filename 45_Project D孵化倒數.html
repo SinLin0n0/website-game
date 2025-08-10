@@ -840,8 +840,8 @@
             totalResources += 3; // heart-1, heart-2, hp-small
             heartManager.loadImages();
             
-            // 音效系統
-            totalResources += 7; // 各種音效
+            // 音效系統（含 BGM）
+            totalResources += 8; // 各種音效 + BGM
             initAudioSystems();
 
             // 前言/按鈕/失敗與背景（計入）
@@ -872,10 +872,7 @@
             initEndAudio();
             initCloudAudio();
             initBornAudio();
-            
-            // 音效載入完成
-            loadedResources += 7;
-            checkLoadingComplete();
+            initGameBGMAudio();
         }
 
         // Loading 完成後，背景載入非優先資源（不計入進度條）
@@ -887,7 +884,7 @@
             try { lightningManager2.loadImages(); } catch (_) {}
 
             // 其餘道路/場景
-            const deferredRoadTypes = ['road-4', 'road-5', 'road-7', 'road-8', 'road-9', 'road-mid', 'road-short-1', 'road-short-2', 'house-4', 'house-5', 'house-6', 'house-7', 'house-8', 'bridge-1', 'bridge-2', 'laboratory-1', 'laboratory-2'];
+            const deferredRoadTypes = ['road-4', 'road-5', 'road-6', 'road-7', 'road-8', 'road-9', 'road-mid', 'road-short-1', 'road-short-2', 'house-4', 'house-5', 'house-6', 'house-7', 'house-8', 'bridge-1', 'bridge-2', 'laboratory-1', 'laboratory-2'];
             loadRoadImages(deferredRoadTypes, false);
 
             // 預載結局重玩按鈕（不計入進度）
@@ -896,6 +893,22 @@
                 const startDecode = retryBtn2.decode ? () => retryBtn2.decode().catch(() => {}) : () => Promise.resolve();
                 retryBtn2.src = './45_Project D孵化倒數/assets/retry-btn-2.webp';
                 startDecode();
+            } catch (_) {}
+
+            // 預載 Game Over 重玩按鈕（不計入進度）
+            try {
+                const retryBtn = new Image();
+                const startDecodeRetry = retryBtn.decode ? () => retryBtn.decode().catch(() => {}) : () => Promise.resolve();
+                retryBtn.src = './45_Project D孵化倒數/assets/retry-btn.webp';
+                startDecodeRetry();
+            } catch (_) {}
+
+            // 預載通關畫面的 Pass 按鈕（不計入進度）
+            try {
+                const passBtn = new Image();
+                const startDecodePass = passBtn.decode ? () => passBtn.decode().catch(() => {}) : () => Promise.resolve();
+                passBtn.src = './45_Project D孵化倒數/assets/pass-btn.webp';
+                startDecodePass();
             } catch (_) {}
 
             // 預載結局圖片（再次確保在 Loading 後啟動預載）
@@ -2283,8 +2296,8 @@
             const retryBtnImage = document.getElementById('retryBtnImage');
             
             if (gameOverImage && retryBtnContainer && retryBtnImage) {
-                // 預先載入 retry-btn 圖片（結束畫面使用 retry-btn-2）
-                retryBtnImage.src = './45_Project D孵化倒數/assets/retry-btn-2.webp';
+                // 預先載入 retry-btn 圖片（Game Over 使用 retry-btn）
+                retryBtnImage.src = './45_Project D孵化倒數/assets/retry-btn.webp';
                 
                 // 追蹤重試按鈕點擊的變數
                 let isProcessingRetryClick = false; // 防止快速連續點擊
@@ -2641,15 +2654,47 @@
             }
         }
         
+        // 通用音效預載入函數（等待可播放，或在錯誤/逾時時繼續，以免卡住）
+        function preloadAudio(url, assignCallback, options = {}) {
+            try {
+                const audio = new Audio();
+                audio.preload = 'auto';
+                if (options.loop) audio.loop = true;
+                if (typeof options.volume === 'number') audio.volume = options.volume;
+                let done = false;
+                const finish = () => {
+                    if (done) return;
+                    done = true;
+                    audio.removeEventListener('canplaythrough', onReady);
+                    audio.removeEventListener('loadeddata', onReady);
+                    audio.removeEventListener('error', onError);
+                    clearTimeout(timeoutId);
+                    onResourceLoaded();
+                };
+                const onReady = () => finish();
+                const onError = () => finish();
+                audio.addEventListener('canplaythrough', onReady, { once: true });
+                // 有些環境不一定會觸發 canplaythrough，loadeddata 作為備援
+                audio.addEventListener('loadeddata', onReady, { once: true });
+                audio.addEventListener('error', onError, { once: true });
+                const timeoutId = setTimeout(() => finish(), options.timeoutMs || 10000);
+                audio.src = url;
+                // 指派到對應變數並回傳給呼叫端做額外設定
+                if (assignCallback) assignCallback(audio);
+            } catch (error) {
+                // 初始化本身失敗時，避免卡住 loading
+                console.log('🚫 音效預載初始化失敗:', error);
+                onResourceLoaded();
+            }
+        }
+
         // 按鈕音效管理函數
         function initButtonAudio() {
-            try {
-                buttonAudio = new Audio('./45_Project D孵化倒數/assets/sound/button.mp3');
-                buttonAudio.volume = buttonAudioVolume;
-                console.log('🔊 按鈕音效初始化完成（音量：' + (buttonAudioVolume * 100) + '%）');
-            } catch (error) {
-                console.log('🚫 按鈕音效初始化失敗:', error);
-            }
+            preloadAudio(
+                './45_Project D孵化倒數/assets/sound/button.mp3',
+                (audio) => { buttonAudio = audio; buttonAudio.volume = buttonAudioVolume; },
+                { volume: buttonAudioVolume }
+            );
         }
         
         function playButtonAudio() {
@@ -2663,13 +2708,11 @@
         }
         
         function initJumpAudio() {
-            try {
-                jumpAudio = new Audio('./45_Project D孵化倒數/assets/sound/jump.mp3');
-                jumpAudio.volume = jumpAudioVolume;
-                console.log('🔊 跳躍音效初始化完成（音量：' + (jumpAudioVolume * 100) + '%）');
-            } catch (error) {
-                console.log('🚫 跳躍音效初始化失敗:', error);
-            }
+            preloadAudio(
+                './45_Project D孵化倒數/assets/sound/jump.mp3',
+                (audio) => { jumpAudio = audio; jumpAudio.volume = jumpAudioVolume; },
+                { volume: jumpAudioVolume }
+            );
         }
         
         function playJumpAudio() {
@@ -2683,13 +2726,11 @@
         }
         
         function initHpLogoAudio() {
-            try {
-                hpLogoAudio = new Audio('./45_Project D孵化倒數/assets/sound/gethp.mp3');
-                hpLogoAudio.volume = hpLogoAudioVolume;
-                console.log('🔊 HP Logo 音效初始化完成（音量：' + (hpLogoAudioVolume * 100) + '%）');
-            } catch (error) {
-                console.log('🚫 HP Logo 音效初始化失敗:', error);
-            }
+            preloadAudio(
+                './45_Project D孵化倒數/assets/sound/gethp.mp3',
+                (audio) => { hpLogoAudio = audio; hpLogoAudio.volume = hpLogoAudioVolume; },
+                { volume: hpLogoAudioVolume }
+            );
         }
         
         function playHpLogoAudio() {
@@ -2703,14 +2744,11 @@
         }
         
         function initRunningAudio() {
-            try {
-                runningAudio = new Audio('./45_Project D孵化倒數/assets/sound/running.mp3');
-                runningAudio.volume = runningAudioVolume;
-                runningAudio.loop = true; // 跑步音效循環播放
-                console.log('🔊 跑步音效初始化完成（音量：' + (runningAudioVolume * 100) + '%）');
-            } catch (error) {
-                console.log('🚫 跑步音效初始化失敗:', error);
-            }
+            preloadAudio(
+                './45_Project D孵化倒數/assets/sound/running.mp3',
+                (audio) => { runningAudio = audio; runningAudio.volume = runningAudioVolume; runningAudio.loop = true; },
+                { volume: runningAudioVolume, loop: true }
+            );
         }
         
         function startRunningAudio() {
@@ -2736,13 +2774,11 @@
         }
         
         function initEndAudio() {
-            try {
-                endAudio = new Audio('./45_Project D孵化倒數/assets/sound/end.mp3');
-                endAudio.volume = endAudioVolume;
-                console.log('🔊 結束音效初始化完成（音量：' + (endAudioVolume * 100) + '%）');
-            } catch (error) {
-                console.log('🚫 結束音效初始化失敗:', error);
-            }
+            preloadAudio(
+                './45_Project D孵化倒數/assets/sound/end.mp3',
+                (audio) => { endAudio = audio; endAudio.volume = endAudioVolume; },
+                { volume: endAudioVolume }
+            );
         }
         
         function playEndAudio() {
@@ -2756,13 +2792,11 @@
         }
         
         function initCloudAudio() {
-            try {
-                cloudAudio = new Audio('./45_Project D孵化倒數/assets/sound/light.mp3');
-                cloudAudio.volume = cloudAudioVolume;
-                console.log('🔊 Cloud 音效初始化完成（音量：' + (cloudAudioVolume * 100) + '%）');
-            } catch (error) {
-                console.log('🚫 Cloud 音效初始化失敗:', error);
-            }
+            preloadAudio(
+                './45_Project D孵化倒數/assets/sound/light.mp3',
+                (audio) => { cloudAudio = audio; cloudAudio.volume = cloudAudioVolume; },
+                { volume: cloudAudioVolume }
+            );
         }
         
         function startCloudAudio() {
@@ -2808,14 +2842,20 @@
         
         // Born 音效管理函數
         function initBornAudio() {
-            try {
-                bornAudio = new Audio('./45_Project D孵化倒數/assets/sound/born.mp3');
-                bornAudio.volume = bornAudioVolume;
-                bornAudio.loop = true; // 設定循環播放
-                console.log('🔊 Born 音效初始化完成（音量：' + (bornAudioVolume * 100) + '%，循環播放）');
-            } catch (error) {
-                console.log('🚫 Born 音效初始化失敗:', error);
-            }
+            preloadAudio(
+                './45_Project D孵化倒數/assets/sound/born.mp3',
+                (audio) => { bornAudio = audio; bornAudio.volume = bornAudioVolume; bornAudio.loop = true; },
+                { volume: bornAudioVolume, loop: true }
+            );
+        }
+
+        // BGM 預載入（納入 loading 計數）
+        function initGameBGMAudio() {
+            preloadAudio(
+                './45_Project D孵化倒數/assets/sound/game-bgm.mp3',
+                (audio) => { gameBGM = audio; gameBGM.volume = musicVolume; gameBGM.loop = true; },
+                { volume: musicVolume, loop: true }
+            );
         }
         
         function playBornAudio() {
@@ -3380,14 +3420,13 @@
         
         // 音樂管理函數
         function initGameBGM() {
-            try {
+            if (!gameBGM) {
+                // 若尚未透過 loading 預載，保底初始化一次
                 gameBGM = new Audio('./45_Project D孵化倒數/assets/sound/game-bgm.mp3');
-                gameBGM.volume = musicVolume; // 直接設定為完整音量
-                gameBGM.loop = true; // 無限循環
-                console.log('🎵 背景音樂初始化完成（音量：' + (musicVolume * 100) + '%）');
-            } catch (error) {
-                console.log('🚫 背景音樂初始化失敗:', error);
             }
+            gameBGM.volume = musicVolume;
+            gameBGM.loop = true;
+            console.log('🎵 背景音樂可用（音量：' + (musicVolume * 100) + '%）');
         }
         
         function playGameBGM() {
@@ -3448,6 +3487,7 @@
             // 初始化並播放背景音樂
             initGameBGM();
             setTimeout(() => {
+                // 若在 loading 階段已預載完成，這裡直接播放
                 playGameBGM();
             }, 100); // 稍微延遲以確保音頻初始化完成
         }
@@ -4116,7 +4156,7 @@
             }
 
             // 載入Lightning圖片
-            loadImages() {
+            loadImages(countToProgress = false) {
                 const lightningTypes = ['lightning'];
                 let loadedCount = 0;
 
@@ -4128,8 +4168,8 @@
                         if (loadedCount === lightningTypes.length) {
                             this.imagesLoaded = true;
                             console.log('⚡ Lightning圖片載入完成');
-                            // 通知loading系統
-                            onResourceLoaded();
+                            // 通知loading系統（僅在需要計入進度時）
+                            if (countToProgress) { onResourceLoaded(); }
                         }
                     };
                     img.onerror = () => {
@@ -4137,8 +4177,8 @@
                         loadedCount++;
                         if (loadedCount === lightningTypes.length) {
                             this.imagesLoaded = true;
-                            // 通知loading系統
-                            onResourceLoaded();
+                            // 通知loading系統（僅在需要計入進度時）
+                            if (countToProgress) { onResourceLoaded(); }
                         }
                     };
                     img.src = `./45_Project D孵化倒數/assets/${type}.webp`;
@@ -4504,7 +4544,7 @@
             }
 
             // 載入Cloud圖片
-            loadImages() {
+            loadImages(countToProgress = false) {
                 const cloudTypes = ['cloud-1', 'cloud-2', 'cloud-3'];
                 let loadedCount = 0;
 
@@ -4513,8 +4553,8 @@
                     img.onload = () => {
                         this.images[type] = img;
                         loadedCount++;
-                        // 通知loading系統
-                        onResourceLoaded();
+                        // 通知loading系統（僅在需要計入進度時）
+                        if (countToProgress) { onResourceLoaded(); }
                         if (loadedCount === cloudTypes.length) {
                             this.imagesLoaded = true;
                             console.log('☁️ Cloud圖片載入完成');
@@ -4523,8 +4563,8 @@
                     img.onerror = () => {
                         console.log(`❌ Cloud圖片載入失敗: ${type}`);
                         loadedCount++;
-                        // 通知loading系統
-                        onResourceLoaded();
+                        // 通知loading系統（僅在需要計入進度時）
+                        if (countToProgress) { onResourceLoaded(); }
                         if (loadedCount === cloudTypes.length) {
                             this.imagesLoaded = true;
                         }
@@ -4789,7 +4829,7 @@
             }
 
             // 載入Cloud圖片
-            loadImages() {
+            loadImages(countToProgress = false) {
                 const cloudTypes = ['cloud-1', 'cloud-2', 'cloud-3'];
                 let loadedCount = 0;
 
@@ -4798,8 +4838,8 @@
                     img.onload = () => {
                         this.images[type] = img;
                         loadedCount++;
-                        // 通知loading系統
-                        onResourceLoaded();
+                        // 通知loading系統（僅在需要計入進度時）
+                        if (countToProgress) { onResourceLoaded(); }
                         if (loadedCount === cloudTypes.length) {
                             this.imagesLoaded = true;
                             console.log('☁️ Cloud2圖片載入完成');
@@ -4808,8 +4848,8 @@
                     img.onerror = () => {
                         console.log(`❌ Cloud2圖片載入失敗: ${type}`);
                         loadedCount++;
-                        // 通知loading系統
-                        onResourceLoaded();
+                        // 通知loading系統（僅在需要計入進度時）
+                        if (countToProgress) { onResourceLoaded(); }
                         if (loadedCount === cloudTypes.length) {
                             this.imagesLoaded = true;
                         }
