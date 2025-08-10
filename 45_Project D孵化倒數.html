@@ -74,6 +74,16 @@
             color: #65B4B7;
             text-shadow: 0 0 10px #65B4B7;
             font-family: 'Press Start 2P', 'Courier New', 'Courier', monospace;
+            /* 預設隱藏，避免字體未載入時出現 FOUT */
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s ease;
+        }
+
+        /* 字體就緒後再顯示 Loading 字樣 */
+        .loading-title.fonts-ready {
+            opacity: 1;
+            visibility: visible;
         }
         
         .loading-progress {
@@ -773,6 +783,22 @@
         function init() {
             // 開始loading流程
             startLoading();
+
+            // 等待字體載入完成後再顯示 Loading 字樣，避免 FOUT
+            try {
+                const loadingTitleEl = document.querySelector('.loading-title');
+                const revealTitle = () => {
+                    if (loadingTitleEl) {
+                        loadingTitleEl.classList.add('fonts-ready');
+                    }
+                };
+                if (document && document.fonts && document.fonts.ready && document.fonts.ready.then) {
+                    document.fonts.ready.then(revealTitle);
+                } else {
+                    // 後備方案：稍微延遲再顯示
+                    setTimeout(revealTitle, 150);
+                }
+            } catch (_) {}
             
             canvas = document.getElementById('gameCanvas');
             ctx = canvas.getContext('2d');
