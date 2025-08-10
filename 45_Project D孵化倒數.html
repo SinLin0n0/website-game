@@ -902,55 +902,57 @@
 
         // Loading 完成後，背景載入非優先資源（不計入進度條）
         function loadDeferredResources() {
-            // Cloud / Cloud2 / Lightning / Lightning2
+            // 1) 先載雲與閃電（圖片非阻塞解碼）
             try { cloudManager.loadImages(); } catch (_) {}
             try { cloudManager2.loadImages(); } catch (_) {}
             try { lightningManager.loadImages(); } catch (_) {}
             try { lightningManager2.loadImages(); } catch (_) {}
 
-            // 其餘道路/場景
-            const deferredRoadTypes = ['road-4', 'road-5', 'road-6', 'road-7', 'road-8', 'road-9', 'road-mid', 'road-short-1', 'road-short-2', 'house-4', 'house-5', 'house-6', 'house-7', 'house-8', 'bridge-1', 'bridge-2', 'laboratory-1', 'laboratory-2'];
-            loadRoadImages(deferredRoadTypes, false);
+            // 2) 分批載入其餘道路/場景，批次之間稍作間隔，降低尖峰
+            const deferredRoadTypesAll = ['road-4', 'road-5', 'road-6', 'road-7', 'road-8', 'road-9', 'road-mid', 'road-short-1', 'road-short-2', 'house-4', 'house-5', 'house-6', 'house-7', 'house-8', 'bridge-1', 'bridge-2', 'laboratory-1', 'laboratory-2'];
+            const batchSize = 6;
+            const roadBatches = [];
+            for (let i = 0; i < deferredRoadTypesAll.length; i += batchSize) {
+                roadBatches.push(deferredRoadTypesAll.slice(i, i + batchSize));
+            }
+            if (roadBatches[0]) loadRoadImages(roadBatches[0], false);
+            if (roadBatches[1]) setTimeout(() => loadRoadImages(roadBatches[1], false), 400);
+            if (roadBatches[2]) setTimeout(() => loadRoadImages(roadBatches[2], false), 800);
 
-            // 預載結局重玩按鈕（不計入進度）
+            // 3) 預載結局與按鈕圖片（非阻塞解碼）
             try {
                 const retryBtn2 = new Image();
+                retryBtn2.decoding = 'async';
                 const startDecode = retryBtn2.decode ? () => retryBtn2.decode().catch(() => {}) : () => Promise.resolve();
                 retryBtn2.src = './45_Project D孵化倒數/assets/retry-btn-2.webp';
                 startDecode();
             } catch (_) {}
 
-            // 預載 Game Over 重玩按鈕（不計入進度）
             try {
                 const retryBtn = new Image();
+                retryBtn.decoding = 'async';
                 const startDecodeRetry = retryBtn.decode ? () => retryBtn.decode().catch(() => {}) : () => Promise.resolve();
                 retryBtn.src = './45_Project D孵化倒數/assets/retry-btn.webp';
                 startDecodeRetry();
             } catch (_) {}
 
-            // 預載通關畫面的 Pass 按鈕（不計入進度）
             try {
                 const passBtn = new Image();
+                passBtn.decoding = 'async';
                 const startDecodePass = passBtn.decode ? () => passBtn.decode().catch(() => {}) : () => Promise.resolve();
                 passBtn.src = './45_Project D孵化倒數/assets/pass-btn.webp';
                 startDecodePass();
             } catch (_) {}
 
-            // 預載結局圖片（再次確保在 Loading 後啟動預載）
+            // 4) 預載結局圖片（再次確保在 Loading 後啟動預載）
             try { preloadEndingImages(); } catch (_) {}
 
-            // 提前初始化並預載結局影片（metadata 以外，改為嘗試緩存影片資料）
-            try {
-                if (!endingVideo) { initEndingVideo(); }
-                if (endingVideo) {
-                    // 若已經有載入過，不再強制呼叫 load() 以免觸發第二次請求
-                    const readyStates = ['HAVE_NOTHING', 'HAVE_METADATA', 'HAVE_CURRENT_DATA', 'HAVE_FUTURE_DATA', 'HAVE_ENOUGH_DATA'];
-                    if (endingVideo.readyState === 0) {
-                        // 尚未有任何資料時，允許觸發一次 load()
-                        endingVideo.load();
-                    }
-                }
-            } catch (_) {}
+            // 5) 等上述背景批次啟動後，再初始化結局影片（僅 metadata，不主動 load）
+            setTimeout(() => {
+                try {
+                    if (!endingVideo) { initEndingVideo(); }
+                } catch (_) {}
+            }, 1200);
 
             // Loading 後背景預載 Born 音效（不計入進度）
             try { initBornAudio(); } catch (_) {}
@@ -3521,7 +3523,7 @@
         }
         
         function update() {
-            if (gameState !== 'playing' && gameState !== 'intro') return;
+            if (gameState !== 'playing') return;
             updatePlayer();
             updateCamera();
             checkCollisions();
@@ -4578,6 +4580,7 @@
 
                 cloudTypes.forEach(type => {
                     const img = new Image();
+                    img.decoding = 'async';
                     img.onload = () => {
                         this.images[type] = img;
                         loadedCount++;
@@ -4863,6 +4866,7 @@
 
                 cloudTypes.forEach(type => {
                     const img = new Image();
+                    img.decoding = 'async';
                     img.onload = () => {
                         this.images[type] = img;
                         loadedCount++;
@@ -5628,6 +5632,7 @@
             
             roadTypes.forEach(type => {
                 const img = new Image();
+                img.decoding = 'async';
                 img.onload = function() {
                     roadImages[type] = img;
                     // 記錄原始尺寸
@@ -5879,12 +5884,17 @@
         }
         
         function gameLoop() {
-            update();
-            springManager.update(player);
+            // 只有在 playing 狀態才更新遊戲邏輯
+            if (gameState === 'playing') {
+                update();
+                springManager.update(player);
+            }
+            // 繪圖可持續進行（畫布在 intro 時通常被模態蓋住，不影響）
             render();
-                if (gameState === 'playing' || gameState === 'intro') {
-        gameLoopId = requestAnimationFrame(gameLoop);
-    }
+            // 在 intro 與 playing 狀態都持續驅動迴圈，避免 startGame 後需要重新手動啟動
+            if (gameState === 'playing' || gameState === 'intro') {
+                gameLoopId = requestAnimationFrame(gameLoop);
+            }
         }
         
         window.addEventListener('load', init);
