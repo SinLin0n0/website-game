@@ -866,8 +866,8 @@
             totalResources += 3; // heart-1, heart-2, hp-small
             heartManager.loadImages();
             
-            // 音效系統（含 BGM）
-            totalResources += 8; // 各種音效 + BGM
+            // 音效系統（含 BGM，不含 Born，Born 改為 Loading 後背景預載）
+            totalResources += 7; // 各種音效 + BGM（排除 Born）
             initAudioSystems();
 
             // 前言/按鈕/失敗與背景（計入）
@@ -897,7 +897,6 @@
             initRunningAudio();
             initEndAudio();
             initCloudAudio();
-            initBornAudio();
             initGameBGMAudio();
         }
 
@@ -952,6 +951,9 @@
                     }
                 }
             } catch (_) {}
+
+            // Loading 後背景預載 Born 音效（不計入進度）
+            try { initBornAudio(); } catch (_) {}
         }
 
         function preloadPriorityUIAssets(urls) {
@@ -2695,7 +2697,7 @@
                     audio.removeEventListener('loadeddata', onReady);
                     audio.removeEventListener('error', onError);
                     clearTimeout(timeoutId);
-                    onResourceLoaded();
+                    if (options.countToProgress !== false) { onResourceLoaded(); }
                 };
                 const onReady = () => finish();
                 const onError = () => finish();
@@ -2710,7 +2712,7 @@
             } catch (error) {
                 // 初始化本身失敗時，避免卡住 loading
                 console.log('🚫 音效預載初始化失敗:', error);
-                onResourceLoaded();
+                if (options.countToProgress !== false) { onResourceLoaded(); }
             }
         }
 
@@ -2871,7 +2873,7 @@
             preloadAudio(
                 './45_Project D孵化倒數/assets/sound/born.mp3',
                 (audio) => { bornAudio = audio; bornAudio.volume = bornAudioVolume; bornAudio.loop = true; },
-                { volume: bornAudioVolume, loop: true }
+                { volume: bornAudioVolume, loop: true, countToProgress: false }
             );
         }
 
